@@ -1,0 +1,8 @@
+{
+  "name": "@platform/shared-types",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Delte TypeScript-typer på tværs af hele platformen (fx company_id, roller, entitets-kontrakter).",
+  "main": "./index.ts",
+  "types": "./index.ts"
+}

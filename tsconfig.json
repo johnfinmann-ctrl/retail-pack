@@ -1,0 +1,19 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/config" },
+    { "path": "packages/logging" },
+    { "path": "packages/ui" },
+    { "path": "packages/auth" },
+    { "path": "packages/translations" },
+    { "path": "packages/offline" },
+    { "path": "packages/scanner" },
+    { "path": "packages/qr-rfid" },
+    { "path": "packages/notifications" },
+    { "path": "packages/ai-engine" },
+    { "path": "packages/reports" },
+    { "path": "packages/analytics" },
+    { "path": "shared/types" },
+    { "path": "shared/utils" }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "name": "@platform/shared-utils",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Rene, genbrugelige hjælpefunktioner uden afhængighed af Supabase eller UI (dato, validering, streng-håndtering m.m.).",
+  "main": "./index.ts",
+  "types": "./index.ts"
+}
