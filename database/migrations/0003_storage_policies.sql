@@ -11,6 +11,13 @@ insert into storage.buckets (id, name, public)
 values ('platform-files', 'platform-files', false)
 on conflict (id) do nothing;
 
+-- KRITISK: uden dette bliver policies nedenfor ALDRIG håndhævet — Postgres
+-- ignorerer RLS-policies på en tabel, hvor RLS ikke er eksplicit aktiveret.
+-- Fundet under uafhængig QA (v0.1.1): Supabase's eget storage.objects har
+-- ofte RLS aktiveret som standard, men vi gør det eksplicit her i stedet for
+-- at stole på en antagelse om et bestemt projekts standardopsætning.
+alter table storage.objects enable row level security;
+
 -- Første sti-segment SKAL matche brugerens company_id fra JWT'et.
 create policy storage_tenant_isolation_select on storage.objects
   for select

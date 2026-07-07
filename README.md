@@ -3,15 +3,17 @@
 Fælles fundament for RetailPackPro og fremtidige apps (SafetyScan, FreshScan, NoteScan,
 LayoutScan). Bygget som ét monorepo, jf. `docs/decisions/0001-monorepo-struktur.md`.
 
-**Version:** v0.1.0 — Platform Core (se `CHANGELOG.md`)
+**Version:** v0.1.1 — Platform Core (Security Fix) — se `CHANGELOG.md`. v0.1.0 er
+**erstattet** og må ikke bruges (seks kritiske RLS-fund, rettet og verificeret i v0.1.1).
 **Referencedokument:** `docs/prs/` indeholder den godkendte PRS v1.0 — al udvikling følger den.
 
 ## Status
 
-✅ **Sprint 1 — Retail Platform Core: afsluttet**
+✅ **Sprint 1 — Retail Platform Core: afsluttet, kritisk QA gennemført, v0.1.1 udgivelsesklar**
 
 RetailPackPro og øvrige apps er **ikke** bygget endnu — det er Sprint 2. Se `CHANGELOG.md`
-for den fulde liste over, hvad der er leveret i denne version.
+for den fulde liste over, hvad der er leveret, og `docs/decisions/0003-*.md` for den
+uafhængige kritiske gennemgang, der førte til v0.1.1.
 
 ## Struktur
 
@@ -39,11 +41,14 @@ retail-platform-core/
 │   ├── types/             Delte TypeScript-kontrakter
 │   └── utils/              Rene hjælpefunktioner
 ├── database/
-│   ├── migrations/         0001 (kerneskema), 0002 (RLS), 0003 (Storage-policies)
-│   └── seed/                Lokal udviklings-seed
+│   ├── migrations/         0001 (kerneskema), 0002 (RLS), 0003 (Storage-policies),
+│   │                        0004 (Access Token Hook), 0005 (Grants) — se CHANGELOG v0.1.1
+│   ├── seed/                Lokal udviklings-seed
+│   └── SUPABASE_SETUP.md    Påkrævet manuel opsætning (Custom Access Token Hook m.m.)
 ├── docs/
 │   ├── prs/                Godkendte specifikationer
-│   └── decisions/           ADR-0001 (struktur), ADR-0002 (Sprint 1-implementeringsvalg)
+│   └── decisions/           ADR-0001, ADR-0002, ADR-0003 (kritisk QA → v0.1.1)
+├── GITHUB_SETUP.md    → Sådan publiceres dette repo som det officielle GitHub-repository
 └── .github/workflows/ci.yml → install → lint → typecheck → test → build
 ```
 

@@ -8,7 +8,7 @@ export interface AuditEvent {
   companyId: string;
   appKey: string;
   userId: string;
-  /** Fx "pack_profile.published", "user.invited", "company.branding_updated". */
+  /** Fx "profile.published", "user.invited", "company.branding_updated". */
   action: string;
   entityType: string;
   entityId: string;

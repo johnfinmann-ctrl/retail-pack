@@ -9,7 +9,7 @@ import type { AppKey, CompanyId } from '@platform/shared-types';
 export type StorageEntityType =
   | 'reference_images'
   | 'documents'
-  | 'pack_session_photos'
+  | 'activity_photos'
   | 'company_branding';
 
 /**

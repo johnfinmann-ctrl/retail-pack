@@ -40,23 +40,68 @@ create policy companies_insert_superadmin_only on companies
 
 -- ----------------------------------------------------------------------------
 -- app_registry
+-- Læsning: alle i virksomheden må se hvilke apps der er aktiveret.
+-- Skrivning: KUN admin/superadmin må aktivere/deaktivere apps (licens-beslutning).
 -- ----------------------------------------------------------------------------
 alter table app_registry enable row level security;
 
-create policy app_registry_tenant_isolation on app_registry
-  for all
-  using (company_id = platform_jwt_company_id() or platform_jwt_role() = 'superadmin')
-  with check (company_id = platform_jwt_company_id() or platform_jwt_role() = 'superadmin');
+create policy app_registry_select_own_tenant on app_registry
+  for select
+  using (company_id = platform_jwt_company_id() or platform_jwt_role() = 'superadmin');
+
+create policy app_registry_admin_write on app_registry
+  for insert
+  with check (
+    (company_id = platform_jwt_company_id() and platform_jwt_role() in ('admin', 'superadmin'))
+    or platform_jwt_role() = 'superadmin'
+  );
+
+create policy app_registry_admin_update on app_registry
+  for update
+  using (
+    (company_id = platform_jwt_company_id() and platform_jwt_role() in ('admin', 'superadmin'))
+    or platform_jwt_role() = 'superadmin'
+  );
+
+create policy app_registry_admin_delete on app_registry
+  for delete
+  using (
+    (company_id = platform_jwt_company_id() and platform_jwt_role() in ('admin', 'superadmin'))
+    or platform_jwt_role() = 'superadmin'
+  );
 
 -- ----------------------------------------------------------------------------
 -- teams
+-- Læsning: alle i virksomheden må se teamstrukturen (PRS §9 — Teamleder skal
+-- kunne se konteksten, men ikke ændre andre teams).
+-- Skrivning: KUN admin/superadmin må oprette/redigere/slette teams.
 -- ----------------------------------------------------------------------------
 alter table teams enable row level security;
 
-create policy teams_tenant_isolation on teams
-  for all
-  using (company_id = platform_jwt_company_id() or platform_jwt_role() = 'superadmin')
-  with check (company_id = platform_jwt_company_id() or platform_jwt_role() = 'superadmin');
+create policy teams_select_own_tenant on teams
+  for select
+  using (company_id = platform_jwt_company_id() or platform_jwt_role() = 'superadmin');
+
+create policy teams_admin_write on teams
+  for insert
+  with check (
+    (company_id = platform_jwt_company_id() and platform_jwt_role() in ('admin', 'superadmin'))
+    or platform_jwt_role() = 'superadmin'
+  );
+
+create policy teams_admin_update on teams
+  for update
+  using (
+    (company_id = platform_jwt_company_id() and platform_jwt_role() in ('admin', 'superadmin'))
+    or platform_jwt_role() = 'superadmin'
+  );
+
+create policy teams_admin_delete on teams
+  for delete
+  using (
+    (company_id = platform_jwt_company_id() and platform_jwt_role() in ('admin', 'superadmin'))
+    or platform_jwt_role() = 'superadmin'
+  );
 
 -- ----------------------------------------------------------------------------
 -- users
@@ -99,9 +144,15 @@ create policy audit_log_select_own_tenant on audit_log
   for select
   using (company_id = platform_jwt_company_id() or platform_jwt_role() = 'superadmin');
 
+-- KRITISK: user_id SKAL matche auth.uid() (den faktisk indloggede bruger).
+-- Uden dette kunne en kompromitteret session skrive audit-poster i en
+-- ANDEN brugers navn og dermed underminere selve revisionssporets integritet.
 create policy audit_log_insert_own_tenant on audit_log
   for insert
-  with check (company_id = platform_jwt_company_id() or platform_jwt_role() = 'superadmin');
+  with check (
+    (company_id = platform_jwt_company_id() and user_id = auth.uid())
+    or platform_jwt_role() = 'superadmin'
+  );
 
 -- Bemærk: ingen "for update"/"for delete"-policy defineret for audit_log.
 -- Uden en tilladende policy afviser RLS automatisk alle UPDATE/DELETE-forsøg.

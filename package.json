@@ -1,6 +1,6 @@
 {
   "name": "retail-platform-core",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Retail Platform Core — fælles fundament for RetailPackPro, SafetyScan, FreshScan, NoteScan, LayoutScan og ReolScan.",
   "license": "UNLICENSED",
