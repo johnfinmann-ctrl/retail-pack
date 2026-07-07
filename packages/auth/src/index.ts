@@ -1,10 +1,11 @@
 /**
  * @platform/auth
  *
- * Login, session, roller, TenantContext (Auth + Multi-Tenant + Roller).
- *
- * Denne fil er en pladsholder oprettet i Sprint 1 (Projektstruktur).
- * Reelt indhold tilføjes i det sprint, hvor denne pakke står for tur
- * (jf. RetailPackPro PRS v1.0 og Sprint-planen).
+ * Login, session, roller, TenantContext, White Label og Storage-fundament
+ * (RetailPackPro PRS v1.0, Sprint 1 — Auth + Multi-Tenant + Roller + White Label).
  */
-export {};
+export * from './supabaseClient';
+export * from './session';
+export * from './permissions';
+export * from './branding';
+export * from './storage';

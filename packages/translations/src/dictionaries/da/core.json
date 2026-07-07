@@ -1,0 +1,24 @@
+{
+  "core": {
+    "actions": {
+      "next": "Næste",
+      "back": "Tilbage",
+      "approve": "Godkend",
+      "cancel": "Annuller",
+      "save": "Gem",
+      "confirm": "Bekræft"
+    },
+    "auth": {
+      "login": "Log ind",
+      "email": "E-mail",
+      "password": "Adgangskode",
+      "forgot_password": "Glemt adgangskode?"
+    },
+    "errors": {
+      "generic": "Der opstod en fejl. Prøv igen.",
+      "unauthorized": "Du har ikke adgang til dette.",
+      "not_found": "Kunne ikke findes.",
+      "offline": "Ingen forbindelse — gemmes lokalt."
+    }
+  }
+}

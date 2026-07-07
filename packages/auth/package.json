@@ -2,11 +2,18 @@
   "name": "@platform/auth",
   "version": "0.1.0",
   "private": true,
-  "description": "Retail Platform Core — auth pakke",
+  "description": "Retail Platform Core — Auth, Multi-Tenant, Roller, White Label, Storage-fundament",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "scripts": {
     "build": "tsc --build",
-    "lint": "eslint src --ext .ts,.tsx"
+    "lint": "eslint src --ext .ts,.tsx",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@platform/config": "*",
+    "@platform/shared-types": "*",
+    "@platform/ui": "*",
+    "@supabase/supabase-js": "^2.45.4"
   }
 }

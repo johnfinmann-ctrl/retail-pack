@@ -1,10 +1,9 @@
 /**
  * @platform/offline
  *
- * Offline write-queue og synkroniseringsmotor (Offline Framework).
- *
- * Denne fil er en pladsholder oprettet i Sprint 1 (Projektstruktur).
- * Reelt indhold tilføjes i det sprint, hvor denne pakke står for tur
- * (jf. RetailPackPro PRS v1.0 og Sprint-planen).
+ * Offline write-queue med idempotens + PWA-fundament (service worker-
+ * registrering, manifest-skema) — RetailPackPro PRS v1.0, Sprint 1.
  */
-export {};
+export * from './storageAdapter';
+export * from './queue';
+export * from './pwa';

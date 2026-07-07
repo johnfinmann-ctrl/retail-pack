@@ -1,10 +1,8 @@
 /**
  * @platform/scanner
  *
- * Scanner Service-kontrakt (stregkode-fundament).
- *
- * Denne fil er en pladsholder oprettet i Sprint 1 (Projektstruktur).
- * Reelt indhold tilføjes i det sprint, hvor denne pakke står for tur
- * (jf. RetailPackPro PRS v1.0 og Sprint-planen).
+ * Scanner Service-kontrakt (fundament) — EAN/ordre/SSCC/pallelabel + manuel
+ * søgning som fallback (RetailPackPro PRS v1.0, Sprint 1).
  */
-export {};
+export * from './types';
+export * from './detectFormat';

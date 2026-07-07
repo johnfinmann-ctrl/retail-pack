@@ -1,0 +1,24 @@
+{
+  "core": {
+    "actions": {
+      "next": "Next",
+      "back": "Back",
+      "approve": "Approve",
+      "cancel": "Cancel",
+      "save": "Save",
+      "confirm": "Confirm"
+    },
+    "auth": {
+      "login": "Log in",
+      "email": "Email",
+      "password": "Password",
+      "forgot_password": "Forgot password?"
+    },
+    "errors": {
+      "generic": "Something went wrong. Please try again.",
+      "unauthorized": "You don't have access to this.",
+      "not_found": "Could not be found.",
+      "offline": "No connection — saved locally."
+    }
+  }
+}

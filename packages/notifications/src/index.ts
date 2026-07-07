@@ -1,10 +1,8 @@
 /**
  * @platform/notifications
  *
- * Notification Service-kontrakt (in-app/push/e-mail-fundament).
- *
- * Denne fil er en pladsholder oprettet i Sprint 1 (Projektstruktur).
- * Reelt indhold tilføjes i det sprint, hvor denne pakke står for tur
- * (jf. RetailPackPro PRS v1.0 og Sprint-planen).
+ * Notification Service-kontrakt (fundament) — in-app/push/e-mail bag én
+ * afsenderkontrakt (RetailPackPro PRS v1.0, Sprint 1).
  */
-export {};
+export * from './types';
+export * from './consoleChannel';

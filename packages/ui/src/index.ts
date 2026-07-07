@@ -1,10 +1,11 @@
 /**
  * @platform/ui
  *
- * Design-tokens og komponentbibliotek (Designsystem).
- *
- * Denne fil er en pladsholder oprettet i Sprint 1 (Projektstruktur).
- * Reelt indhold tilføjes i det sprint, hvor denne pakke står for tur
- * (jf. RetailPackPro PRS v1.0 og Sprint-planen).
+ * Designsystem (tokens), komponentbibliotek, Navigation-, Admin- og
+ * Dashboard-framework — delt af alle apps (RetailPackPro PRS v1.0, Sprint 1).
  */
-export {};
+export * from './tokens';
+export * from './components';
+export * from './navigation/types';
+export * from './dashboard';
+export * from './admin';

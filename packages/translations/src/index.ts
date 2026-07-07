@@ -1,10 +1,9 @@
 /**
  * @platform/translations
  *
- * Internationalisering (i18n) — dansk/engelsk fra dag 1.
- *
- * Denne fil er en pladsholder oprettet i Sprint 1 (Projektstruktur).
- * Reelt indhold tilføjes i det sprint, hvor denne pakke står for tur
- * (jf. RetailPackPro PRS v1.0 og Sprint-planen).
+ * Internationalisering (i18n) — dansk/engelsk fra dag 1 (RetailPackPro PRS v1.0,
+ * Sprint 1). Nye sprog tilføjes som nye ordbogsfiler, ingen kodeændring.
  */
-export {};
+export * from './i18n';
+export { default as daCore } from './dictionaries/da/core.json';
+export { default as enCore } from './dictionaries/en/core.json';

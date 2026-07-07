@@ -1,0 +1,13 @@
+{
+  "name": "@platform/camera",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Retail Platform Core — Camera Service-kontrakt (fundament)",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsc --build",
+    "lint": "eslint src --ext .ts,.tsx",
+    "test": "vitest run"
+  }
+}
