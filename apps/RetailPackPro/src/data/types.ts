@@ -1,0 +1,112 @@
+/**
+ * RetailPackPro's egne domænetyper. Bevidst adskilt fra databasens
+ * snake_case-kolonnenavne (se mappers.ts) — så et fremtidigt databaseskift
+ * (eller en anden navngivning) ikke tvinger ændringer igennem hele appen.
+ */
+
+export type PackFlowStepKey = 'packaging' | 'pallet' | 'photo' | 'approve';
+export type PackProfileStatus = 'draft' | 'published' | 'archived';
+export type PackagingItemType = 'box' | 'inner_packaging' | 'divider' | 'corner_protector' | 'pallet_type';
+
+export interface Customer {
+  id: string;
+  companyId: string;
+  name: string;
+  logoUrl: string | null;
+  notes: string | null;
+  packFlowMode: string | null;
+}
+
+export interface Product {
+  id: string;
+  companyId: string;
+  ean: string;
+  name: string;
+  description: string | null;
+  imageUrl: string | null;
+  category: string | null;
+}
+
+export interface PackagingItem {
+  id: string;
+  companyId: string;
+  type: PackagingItemType;
+  name: string;
+  imageUrl: string | null;
+  dimensions: string | null;
+  notes: string | null;
+}
+
+export interface PackProfile {
+  id: string;
+  companyId: string;
+  customerId: string;
+  name: string;
+
+  boxItemId: string | null;
+  innerPackagingItemId: string | null;
+  dividerItemId: string | null;
+  cornerProtectorItemId: string | null;
+
+  palletItemId: string | null;
+  placementPatternImageUrl: string | null;
+  maxHeightCm: number | null;
+  maxWeightKg: number | null;
+  layerCount: number | null;
+  mixedPalletAllowed: boolean | null;
+  labelPosition: string | null;
+  ssccLabelRequired: boolean;
+  foilType: string | null;
+  overhangAllowed: boolean | null;
+  specialInstructions: string | null;
+
+  version: number;
+  status: PackProfileStatus;
+  effectiveFrom: string | null;
+  createdBy: string | null;
+  updatedBy: string | null;
+  lockedBy: string | null;
+  lockedAt: string | null;
+  publishedAt: string | null;
+}
+
+export interface PackFlowStep {
+  id: string;
+  companyId: string;
+  stepKey: PackFlowStepKey;
+  sortOrder: number;
+  enabled: boolean;
+}
+
+export interface ReferenceImage {
+  id: string;
+  packProfileId: string;
+  url: string;
+  sortOrder: number;
+  caption: string | null;
+  relatedStep: PackFlowStepKey | null;
+}
+
+export interface PackSession {
+  id: string;
+  companyId: string;
+  userId: string;
+  customerId: string;
+  productId: string;
+  packProfileId: string;
+  scannedCode: string | null;
+  stepsCompleted: Record<string, unknown> | null;
+  approvedAt: string;
+  deviceInfo: Record<string, unknown> | null;
+}
+
+export interface NewPackSession {
+  companyId: string;
+  userId: string;
+  customerId: string;
+  productId: string;
+  packProfileId: string;
+  scannedCode?: string;
+  stepsCompleted?: Record<string, unknown>;
+  deviceInfo?: Record<string, unknown>;
+}

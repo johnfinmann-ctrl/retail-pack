@@ -1,0 +1,30 @@
+{
+  "retailpackpro": {
+    "customer_select": {
+      "title": "Select customer"
+    },
+    "scan": {
+      "title": "Scan or search item",
+      "search_placeholder": "Search product",
+      "search_button": "Search manually",
+      "not_found": "Item not found",
+      "report_missing": "Report missing item"
+    },
+    "packaging": {
+      "title": "Packaging"
+    },
+    "pallet": {
+      "title": "Pallet & placement",
+      "max_height": "Max height",
+      "max_weight": "Max weight",
+      "layers": "Layers",
+      "mixed_pallet": "Mixed pallet"
+    },
+    "approve": {
+      "title": "Ready to approve",
+      "button": "Hold to approve",
+      "confirmation": "Approved"
+    },
+    "no_profile_found": "No packing rule found for this combination"
+  }
+}

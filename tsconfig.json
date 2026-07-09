@@ -15,6 +15,7 @@
     { "path": "packages/reports" },
     { "path": "packages/analytics" },
     { "path": "shared/types" },
-    { "path": "shared/utils" }
+    { "path": "shared/utils" },
+    { "path": "apps/RetailPackPro" }
   ]
 }
