@@ -2,6 +2,34 @@
 
 Alle mærkbare ændringer til Retail Platform Core dokumenteres i denne fil.
 
+## [0.2.0] Platform Core — Data-adgangslag — 2026-07-08
+
+**Kategori:** Ny Platform Core-kapabilitet (minor-version — ikke en patch, ikke en fejlrettelse).
+
+### Tilføjet
+- **`@platform/data`** — ny pakke. Håndhæver laget `UI → Application Services →
+  Repositories → Platform Core → Supabase`. Repositories i enhver app importerer
+  denne pakke i stedet for at kalde `@supabase/supabase-js` direkte, og i stedet for
+  at duplikere fejlhåndtering pr. kald.
+  - `DataClient`-interface: `schema()`, `run()`, `runMany()`.
+  - Centraliserer fejl-normalisering (`toAppError`, genbrugt fra `@platform/config`)
+    og valgfri logging (`@platform/logging`) ét sted.
+  - Bevidst IKKE et forsøg på at abstrahere hele PostgREST's forespørgselssprog
+    (`.eq`/`.ilike`/`.in`/`.order` osv.) — kun entry point og resultat-håndtering.
+    Se `docs/decisions/0005-platform-core-data-layer.md` for begrundelsen.
+  - 7 tests, ingen ægte Supabase-forbindelse nødvendig.
+
+### Hvorfor minor (0.2.0) og ikke patch
+Dette er ny, bagudkompatibel funktionalitet — en helt ny pakke, ikke en rettelse af en
+eksisterende fejl. Ingen eksisterende Core-pakke er ændret; RetailPackPro's
+repository-lag er opdateret til at bruge den (se RetailPackPro's egen changelog/commit),
+men det er en app-side tilpasning til en ny Core-kapabilitet, ikke omvendt.
+
+### Ændrede/nye filer
+- `packages/data/` (ny pakke: `DataClient.ts`, `index.ts`, tests, package.json, tsconfig, README)
+- `docs/decisions/0005-platform-core-data-layer.md` (ny)
+- `tsconfig.json` (tilføjet reference til `packages/data`)
+
 ## [0.1.2] Platform Core — Tooling Patch — 2026-07-08
 
 **Kategori:** Platform Core-patch (generisk, gavner alle apps — ikke en RetailPackPro-afhængighed).

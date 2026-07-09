@@ -2,6 +2,7 @@
   "files": [],
   "references": [
     { "path": "packages/config" },
+    { "path": "packages/data" },
     { "path": "packages/logging" },
     { "path": "packages/ui" },
     { "path": "packages/auth" },
