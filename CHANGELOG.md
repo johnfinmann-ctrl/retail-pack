@@ -2,6 +2,32 @@
 
 Alle mærkbare ændringer til Retail Platform Core dokumenteres i denne fil.
 
+## [0.1.2] Platform Core — Tooling Patch — 2026-07-08
+
+**Kategori:** Platform Core-patch (generisk, gavner alle apps — ikke en RetailPackPro-afhængighed).
+
+### Rettet
+- **`npm run lint` løb tør for hukommelse** (`JavaScript heap out of memory`) efterhånden
+  som monorepoets samlede TypeScript-projektgraf voksede med RetailPackPro's første kode
+  (Sprint 2). Fundet under Sprint 2, Trin 3. Dette er et **monorepo-skaleringsproblem**,
+  ikke noget specifikt ved RetailPackPro — enhver fremtidig app (SafetyScan, FreshScan
+  m.fl.) ville ramme samme grænse, uanset hvilken app der får kodebasen til at vokse.
+  **Fix:** `lint`/`lint:fix`-scripts i root `package.json` og CI-workflowet kører nu med
+  `--max-old-space-size=4096`.
+
+### Vurdering (jf. eksplicit krav om at adskille generiske Core-ændringer fra
+### app-specifikke behov)
+Ændringen ligger korrekt i Platform Core: den retter et værktøjs-problem i selve
+monorepo-opsætningen (`package.json`, `.github/workflows/ci.yml`), ikke i nogen pakkes
+kode eller API. Den er ikke en RetailPackPro-afhængighed — RetailPackPro importerer intet
+herfra, og ændringen ville være nødvendig uanset hvilken app der havde udløst
+hukommelsesgrænsen. Se `docs/decisions/0004-platform-core-tooling-patch.md`.
+
+### Ændrede filer
+- `package.json` (lint/lint:fix-scripts, version 0.1.1 → 0.1.2)
+- `.github/workflows/ci.yml` (samme hukommelsesgrænse i CI)
+- `docs/decisions/0004-platform-core-tooling-patch.md` (ny)
+
 ## [0.1.1] Platform Core — Security Fix — 2026-07-07
 
 Uafhængig kritisk QA blev gennemført på v0.1.0 FØR offentliggørelse på GitHub. Seks

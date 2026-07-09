@@ -22,6 +22,8 @@ jobs:
 
       - name: Lint
         run: npm run lint
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
 
       - name: Typecheck (alle pakker via project references)
         run: npm run typecheck
