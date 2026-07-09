@@ -1,5 +1,4 @@
-import { toAppError } from '@platform/config';
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { DataClient } from '@platform/data';
 
 import { mapPackFlowStepRow, mapPackProfileRow, mapReferenceImageRow } from '../../mappers';
 import type { PackFlowStep, PackProfile, ReferenceImage } from '../../types';
@@ -15,7 +14,7 @@ interface PackProfileRowWithLinks {
 }
 
 export class SupabasePackProfileRepository implements PackProfileRepository {
-  constructor(private readonly client: SupabaseClient) {}
+  constructor(private readonly data: DataClient) {}
 
   /**
    * "Gælder for alle produkter, hvis ingen rækker findes i
@@ -28,17 +27,16 @@ export class SupabasePackProfileRepository implements PackProfileRepository {
     customerId: string,
     productId: string,
   ): Promise<PackProfile | null> {
-    const { data, error } = await this.client
-      .schema(RPP_SCHEMA)
-      .from('pack_profiles')
-      .select('*, pack_profile_products(product_id)')
-      .eq('customer_id', customerId)
-      .eq('status', 'published')
-      .order('updated_at', { ascending: false });
+    const rows = await this.data.runMany<PackProfileRowWithLinks>(
+      this.data
+        .schema(RPP_SCHEMA)
+        .from('pack_profiles')
+        .select('*, pack_profile_products(product_id)')
+        .eq('customer_id', customerId)
+        .eq('status', 'published')
+        .order('updated_at', { ascending: false }),
+    );
 
-    if (error) throw toAppError(error);
-
-    const rows = (data ?? []) as PackProfileRowWithLinks[];
     const match = rows.find((row) => {
       const links = row.pack_profile_products ?? [];
       return links.length === 0 || links.some((link) => link.product_id === productId);
@@ -48,26 +46,21 @@ export class SupabasePackProfileRepository implements PackProfileRepository {
   }
 
   async listFlowSteps(companyId: string): Promise<PackFlowStep[]> {
-    const { data, error } = await this.client
-      .schema(RPP_SCHEMA)
-      .from('pack_flow_steps')
-      .select('*')
-      .eq('company_id', companyId)
-      .order('sort_order');
-
-    if (error) throw toAppError(error);
-    return (data ?? []).map(mapPackFlowStepRow);
+    const rows = await this.data.runMany(
+      this.data.schema(RPP_SCHEMA).from('pack_flow_steps').select('*').eq('company_id', companyId).order('sort_order'),
+    );
+    return rows.map(mapPackFlowStepRow);
   }
 
   async listReferenceImages(packProfileId: string): Promise<ReferenceImage[]> {
-    const { data, error } = await this.client
-      .schema(RPP_SCHEMA)
-      .from('reference_images')
-      .select('*')
-      .eq('pack_profile_id', packProfileId)
-      .order('sort_order');
-
-    if (error) throw toAppError(error);
-    return (data ?? []).map(mapReferenceImageRow);
+    const rows = await this.data.runMany(
+      this.data
+        .schema(RPP_SCHEMA)
+        .from('reference_images')
+        .select('*')
+        .eq('pack_profile_id', packProfileId)
+        .order('sort_order'),
+    );
+    return rows.map(mapReferenceImageRow);
   }
 }

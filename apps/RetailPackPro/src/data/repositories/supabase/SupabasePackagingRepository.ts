@@ -1,5 +1,4 @@
-import { toAppError } from '@platform/config';
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { DataClient } from '@platform/data';
 
 import { mapPackagingItemRow } from '../../mappers';
 import type { PackagingItem } from '../../types';
@@ -8,19 +7,19 @@ import type { PackagingRepository } from '../interfaces';
 import { RPP_SCHEMA } from './schema';
 
 export class SupabasePackagingRepository implements PackagingRepository {
-  constructor(private readonly client: SupabaseClient) {}
+  constructor(private readonly data: DataClient) {}
 
   async listByIds(ids: readonly string[]): Promise<PackagingItem[]> {
     if (ids.length === 0) return [];
 
-    const { data, error } = await this.client
-      .schema(RPP_SCHEMA)
-      .from('packaging_items')
-      .select('*')
-      .in('id', ids as string[])
-      .is('deleted_at', null);
-
-    if (error) throw toAppError(error);
-    return (data ?? []).map(mapPackagingItemRow);
+    const rows = await this.data.runMany(
+      this.data
+        .schema(RPP_SCHEMA)
+        .from('packaging_items')
+        .select('*')
+        .in('id', ids as string[])
+        .is('deleted_at', null),
+    );
+    return rows.map(mapPackagingItemRow);
   }
 }

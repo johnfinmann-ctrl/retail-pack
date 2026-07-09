@@ -3,10 +3,12 @@
  * appen, der importerer de konkrete Supabase*Repository-klasser direkte —
  * alt andet (Services, UI) arbejder udelukkende med interfaces.ts's typer.
  *
- * Skulle Supabase nogensinde udskiftes, er dette den eneste fil, der skal
- * ændres — Services-laget forbliver uændret.
+ * Tager en @platform/data DataClient (ikke en rå Supabase-klient) — det er
+ * selve håndhævelsen af laget UI → Services → Repositories → Platform Core
+ * → Supabase. Skulle Supabase nogensinde udskiftes, er DataClient's egen
+ * implementering (i @platform/data) det eneste, der skal ændres.
  */
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { DataClient } from '@platform/data';
 
 import type { Repositories } from './interfaces';
 import { SupabaseCustomerRepository } from './supabase/SupabaseCustomerRepository';
@@ -15,13 +17,13 @@ import { SupabasePackProfileRepository } from './supabase/SupabasePackProfileRep
 import { SupabasePackSessionRepository } from './supabase/SupabasePackSessionRepository';
 import { SupabaseProductRepository } from './supabase/SupabaseProductRepository';
 
-export function createSupabaseRepositories(client: SupabaseClient): Repositories {
+export function createSupabaseRepositories(data: DataClient): Repositories {
   return {
-    customers: new SupabaseCustomerRepository(client),
-    products: new SupabaseProductRepository(client),
-    packaging: new SupabasePackagingRepository(client),
-    packProfiles: new SupabasePackProfileRepository(client),
-    packSessions: new SupabasePackSessionRepository(client),
+    customers: new SupabaseCustomerRepository(data),
+    products: new SupabaseProductRepository(data),
+    packaging: new SupabasePackagingRepository(data),
+    packProfiles: new SupabasePackProfileRepository(data),
+    packSessions: new SupabasePackSessionRepository(data),
   };
 }
 

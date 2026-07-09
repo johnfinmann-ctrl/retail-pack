@@ -10,6 +10,7 @@
   "references": [
     { "path": "../../packages/auth" },
     { "path": "../../packages/config" },
+    { "path": "../../packages/data" },
     { "path": "../../packages/logging" },
     { "path": "../../packages/offline" },
     { "path": "../../packages/translations" },

@@ -13,6 +13,7 @@
   "dependencies": {
     "@platform/auth": "*",
     "@platform/config": "*",
+    "@platform/data": "*",
     "@platform/logging": "*",
     "@platform/offline": "*",
     "@platform/shared-types": "*",
