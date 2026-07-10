@@ -64,4 +64,9 @@ export class PackGuideService {
       activeFlowSteps: allFlowSteps.filter((step) => step.enabled).sort((a, b) => a.sortOrder - b.sortOrder),
     };
   }
+
+  /** Til Admin's grundlæggende pakkeprofil-oversigt — ALLE statusser. */
+  listProfilesForCompany(companyId: string) {
+    return this.repos.packProfiles.listAllForCompany(companyId);
+  }
 }

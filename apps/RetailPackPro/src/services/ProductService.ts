@@ -12,4 +12,9 @@ export class ProductService {
   searchByName(companyId: string, query: string): Promise<Product[]> {
     return this.repos.products.searchByName(companyId, query);
   }
+
+  /** Til Admin's grundlæggende produktoversigt. */
+  listAll(companyId: string): Promise<Product[]> {
+    return this.repos.products.listAll(companyId);
+  }
 }

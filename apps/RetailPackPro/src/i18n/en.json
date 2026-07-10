@@ -28,6 +28,29 @@
     "no_profile_found": "No packing rule found for this combination",
     "flow": {
       "step_of": "of"
+    },
+    "admin": {
+      "nav": {
+        "dashboard": "Dashboard",
+        "customers": "Customers",
+        "products": "Products",
+        "pack_profiles": "Pack profiles"
+      },
+      "dashboard": {
+        "customers_count": "Active customers",
+        "products_count": "Products",
+        "profiles_count": "Pack profiles"
+      },
+      "status": {
+        "draft": "Draft",
+        "published": "Published",
+        "archived": "Archived"
+      },
+      "empty": {
+        "customers": "No customers created yet",
+        "products": "No products created yet",
+        "pack_profiles": "No pack profiles created yet"
+      }
     }
   }
 }

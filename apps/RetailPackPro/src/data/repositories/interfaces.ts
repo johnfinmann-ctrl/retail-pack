@@ -28,6 +28,8 @@ export interface ProductRepository {
   findByEan(companyId: string, ean: string): Promise<Product | null>;
   searchByName(companyId: string, query: string): Promise<Product[]>;
   getById(productId: string): Promise<Product | null>;
+  /** Til Admin's grundlæggende produktoversigt (PRS §9 Admin). */
+  listAll(companyId: string): Promise<Product[]>;
 }
 
 export interface PackagingRepository {
@@ -44,6 +46,8 @@ export interface PackProfileRepository {
   findPublishedForCustomerAndProduct(customerId: string, productId: string): Promise<PackProfile | null>;
   listFlowSteps(companyId: string): Promise<PackFlowStep[]>;
   listReferenceImages(packProfileId: string): Promise<ReferenceImage[]>;
+  /** Til Admin's grundlæggende oversigt — ALLE statusser (draft/published/archived). */
+  listAllForCompany(companyId: string): Promise<PackProfile[]>;
 }
 
 export interface PackSessionRepository {

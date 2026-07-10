@@ -1,6 +1,6 @@
 {
   "name": "@apps/retailpackpro",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "RetailPackPro — første app på Retail Platform Core. Digital pakke-/emballageguide for Carletti (Sprint 2).",
   "scripts": {

@@ -28,6 +28,29 @@
     "no_profile_found": "Ingen pakkeregel fundet for denne kombination",
     "flow": {
       "step_of": "af"
+    },
+    "admin": {
+      "nav": {
+        "dashboard": "Dashboard",
+        "customers": "Kunder",
+        "products": "Produkter",
+        "pack_profiles": "Pakkeprofiler"
+      },
+      "dashboard": {
+        "customers_count": "Aktive kunder",
+        "products_count": "Produkter",
+        "profiles_count": "Pakkeprofiler"
+      },
+      "status": {
+        "draft": "Kladde",
+        "published": "Publiceret",
+        "archived": "Arkiveret"
+      },
+      "empty": {
+        "customers": "Ingen kunder oprettet endnu",
+        "products": "Ingen produkter oprettet endnu",
+        "pack_profiles": "Ingen pakkeprofiler oprettet endnu"
+      }
     }
   }
 }

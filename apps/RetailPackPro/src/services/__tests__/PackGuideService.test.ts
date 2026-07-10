@@ -108,4 +108,15 @@ describe('PackGuideService (helt uden Supabase — kun fakes)', () => {
     const guide = await service.getGuideFor('company-1', 'customer-1', 'et-produkt');
     expect(guide).toBeNull();
   });
+
+  it('lister ALLE statusser til Admin-oversigten (ikke kun published)', async () => {
+    const draftProfile: PackProfile = { ...baseProfile, id: 'profile-draft', status: 'draft' };
+    const service = new PackGuideService({
+      packProfiles: new FakePackProfileRepository([baseProfile, draftProfile], {}, flowSteps, []),
+      packaging: new FakePackagingRepository(packagingItems),
+    });
+
+    const profiles = await service.listProfilesForCompany('company-1');
+    expect(profiles).toHaveLength(2);
+  });
 });

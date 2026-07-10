@@ -50,4 +50,17 @@ export class SupabaseProductRepository implements ProductRepository {
     );
     return row ? mapProductRow(row) : null;
   }
+
+  async listAll(companyId: string): Promise<Product[]> {
+    const rows = await this.data.runMany(
+      this.data
+        .schema(RPP_SCHEMA)
+        .from('products')
+        .select('*')
+        .eq('company_id', companyId)
+        .is('deleted_at', null)
+        .order('name'),
+    );
+    return rows.map(mapProductRow);
+  }
 }

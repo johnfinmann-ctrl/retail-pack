@@ -26,4 +26,10 @@ describe('ProductService', () => {
     const result = await service.searchByName('company-1', 'bland');
     expect(result).toHaveLength(1);
   });
+
+  it('lister alle produkter for Admin-oversigten', async () => {
+    const service = new ProductService({ products: new FakeProductRepository(products) });
+    const result = await service.listAll('company-1');
+    expect(result).toHaveLength(1);
+  });
 });

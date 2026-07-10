@@ -63,4 +63,17 @@ export class SupabasePackProfileRepository implements PackProfileRepository {
     );
     return rows.map(mapReferenceImageRow);
   }
+
+  async listAllForCompany(companyId: string): Promise<PackProfile[]> {
+    const rows = await this.data.runMany(
+      this.data
+        .schema(RPP_SCHEMA)
+        .from('pack_profiles')
+        .select('*')
+        .eq('company_id', companyId)
+        .is('deleted_at', null)
+        .order('name'),
+    );
+    return rows.map(mapPackProfileRow);
+  }
 }

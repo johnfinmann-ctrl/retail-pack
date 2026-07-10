@@ -44,6 +44,9 @@ export class FakeProductRepository implements ProductRepository {
   async getById(id: string) {
     return this.products.find((p) => p.id === id) ?? null;
   }
+  async listAll(companyId: string) {
+    return this.products.filter((p) => p.companyId === companyId);
+  }
 }
 
 export class FakePackagingRepository implements PackagingRepository {
@@ -76,6 +79,10 @@ export class FakePackProfileRepository implements PackProfileRepository {
 
   async listReferenceImages(packProfileId: string) {
     return this.referenceImages.filter((r) => r.packProfileId === packProfileId);
+  }
+
+  async listAllForCompany(companyId: string) {
+    return this.profiles.filter((p) => p.companyId === companyId);
   }
 }
 
