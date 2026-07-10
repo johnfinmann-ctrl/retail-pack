@@ -63,6 +63,23 @@ export interface PackProfileRepository {
   /** Sætter status til publiceret + published_at — Admin-UI'et kalder det bare "Publicér". */
   publish(profileId: string, publishedByUserId: string): Promise<PackProfile>;
   setProductLinks(profileId: string, productIds: readonly string[]): Promise<void>;
+
+  // ---- Redigering af en allerede publiceret pakkemetode ----
+
+  /** Finder en evt. igangværende kladde for samme "familie" af versioner (lineage). */
+  findDraftForLineage(lineageId: string): Promise<PackProfile | null>;
+  /** Opretter en ny kladde-version som kopi af den publicerede, låst til den redigerende admin. */
+  createDraftFromPublished(publishedProfileId: string, editingUserId: string): Promise<PackProfile>;
+  /** Gemmer ændringer i kladden UDEN at publicere — låsen bevares. */
+  updateDraft(draftId: string, fields: Partial<NewPackProfile>): Promise<PackProfile>;
+  /** Atomisk: kladden bliver aktiv, den tidligere version arkiveres, låsen frigives. */
+  publishDraft(draftId: string, publisherUserId: string): Promise<PackProfile>;
+  /** Sletter kladden (aldrig en publiceret/arkiveret version) — frigiver derved låsen. */
+  discardDraft(draftId: string): Promise<void>;
+  /** Til "Se tidligere versioner" — alle versioner (publiceret/arkiveret/evt. kladde) i samme familie. */
+  listVersionsForLineage(lineageId: string): Promise<PackProfile[]>;
+  /** Til at vise "X redigerer denne pakkemetode lige nu". */
+  getUserFullName(userId: string): Promise<string | null>;
 }
 
 export interface PackSessionRepository {

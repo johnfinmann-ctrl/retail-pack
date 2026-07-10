@@ -81,6 +81,7 @@ export function mapPackProfileRow(row: any): PackProfile {
     lockedBy: row.locked_by,
     lockedAt: row.locked_at,
     publishedAt: row.published_at,
+    lineageId: row.lineage_id,
   };
 }
 

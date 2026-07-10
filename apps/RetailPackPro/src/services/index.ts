@@ -7,6 +7,7 @@ import type { Repositories } from '../data/repositories/interfaces';
 import { CustomerService } from './CustomerService';
 import { PackagingService } from './PackagingService';
 import { PackGuideService } from './PackGuideService';
+import { PackProfileEditingService } from './PackProfileEditingService';
 import { PackSessionService } from './PackSessionService';
 import { ProductService } from './ProductService';
 
@@ -15,6 +16,7 @@ export interface Services {
   products: ProductService;
   packaging: PackagingService;
   packGuide: PackGuideService;
+  packProfileEditing: PackProfileEditingService;
   packSessions: PackSessionService;
 }
 
@@ -24,6 +26,7 @@ export function createServices(repositories: Repositories): Services {
     products: new ProductService(repositories),
     packaging: new PackagingService(repositories),
     packGuide: new PackGuideService(repositories),
+    packProfileEditing: new PackProfileEditingService(repositories),
     packSessions: new PackSessionService(repositories),
   };
 }

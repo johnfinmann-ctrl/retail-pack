@@ -3,6 +3,8 @@
  * databasen kan mockes helt uden Supabase/netværk (dit krav til Trin 4).
  * Bruges kun i tests, aldrig i den rigtige app.
  */
+import { ConflictError } from '@platform/config';
+
 import type {
   Customer,
   NewCustomer,
@@ -114,6 +116,7 @@ export class FakePackProfileRepository implements PackProfileRepository {
     private readonly productLinks: Record<string, string[]> = {}, // profileId -> productIds
     private readonly flowSteps: PackFlowStep[] = [],
     private readonly referenceImages: ReferenceImage[] = [],
+    private readonly userNames: Record<string, string> = {}, // userId -> full name (til laase-visning)
   ) {}
 
   async findPublishedForCustomerAndProduct(customerId: string, productId: string) {
@@ -138,8 +141,9 @@ export class FakePackProfileRepository implements PackProfileRepository {
   }
 
   async create(input: NewPackProfile): Promise<PackProfile> {
+    const id = `fake-profile-${this.nextId++}`;
     const created: PackProfile = {
-      id: `fake-profile-${this.nextId++}`,
+      id,
       companyId: input.companyId,
       customerId: input.customerId,
       name: input.name,
@@ -166,6 +170,7 @@ export class FakePackProfileRepository implements PackProfileRepository {
       lockedBy: null,
       lockedAt: null,
       publishedAt: null,
+      lineageId: id,
     };
     this.profiles.push(created);
     return created;
@@ -182,6 +187,100 @@ export class FakePackProfileRepository implements PackProfileRepository {
 
   async setProductLinks(profileId: string, productIds: readonly string[]): Promise<void> {
     this.productLinksWritten[profileId] = [...productIds];
+  }
+
+  // ---- Redigering af en allerede publiceret pakkemetode ----
+
+  async findDraftForLineage(lineageId: string): Promise<PackProfile | null> {
+    return this.profiles.find((p) => p.lineageId === lineageId && p.status === 'draft') ?? null;
+  }
+
+  async createDraftFromPublished(publishedProfileId: string, editingUserId: string): Promise<PackProfile> {
+    const published = this.profiles.find((p) => p.id === publishedProfileId);
+    if (!published) throw new Error(`Fake: profil ${publishedProfileId} findes ikke`);
+
+    const existingDraft = this.profiles.find((p) => p.lineageId === published.lineageId && p.status === 'draft');
+    if (existingDraft) {
+      throw new ConflictError('En anden admin er allerede i gang med at redigere denne pakkemetode', {
+        lineageId: published.lineageId,
+      });
+    }
+
+    const id = `fake-profile-${this.nextId++}`;
+    const draft: PackProfile = {
+      ...published,
+      id,
+      version: published.version + 1,
+      status: 'draft',
+      createdBy: editingUserId,
+      updatedBy: editingUserId,
+      lockedBy: editingUserId,
+      lockedAt: new Date().toISOString(),
+      publishedAt: null,
+    };
+    this.profiles.push(draft);
+
+    const links = this.productLinks[publishedProfileId];
+    if (links && links.length > 0) {
+      this.productLinksWritten[id] = [...links];
+    }
+
+    return draft;
+  }
+
+  async updateDraft(draftId: string, fields: Partial<NewPackProfile>): Promise<PackProfile> {
+    const draft = this.profiles.find((p) => p.id === draftId && p.status === 'draft');
+    if (!draft) throw new Error(`Fake: kladde ${draftId} findes ikke`);
+    if (fields.name !== undefined) draft.name = fields.name;
+    if (fields.palletItemId !== undefined) draft.palletItemId = fields.palletItemId ?? null;
+    if (fields.maxHeightCm !== undefined) draft.maxHeightCm = fields.maxHeightCm ?? null;
+    if (fields.maxWeightKg !== undefined) draft.maxWeightKg = fields.maxWeightKg ?? null;
+    if (fields.layerCount !== undefined) draft.layerCount = fields.layerCount ?? null;
+    if (fields.mixedPalletAllowed !== undefined) draft.mixedPalletAllowed = fields.mixedPalletAllowed ?? null;
+    if (fields.labelPosition !== undefined) draft.labelPosition = fields.labelPosition ?? null;
+    if (fields.foilType !== undefined) draft.foilType = fields.foilType ?? null;
+    if (fields.specialInstructions !== undefined) draft.specialInstructions = fields.specialInstructions ?? null;
+    return draft;
+  }
+
+  async publishDraft(draftId: string, publisherUserId: string): Promise<PackProfile> {
+    const draft = this.profiles.find((p) => p.id === draftId && p.status === 'draft');
+    if (!draft) throw new Error(`Fake: kladde ${draftId} findes ikke`);
+
+    // Arkivér den tidligere publicerede version i samme lineage (samme regel som den ægte funktion)
+    for (const p of this.profiles) {
+      if (p.lineageId === draft.lineageId && p.status === 'published') {
+        p.status = 'archived';
+        p.updatedBy = publisherUserId;
+      }
+    }
+
+    draft.status = 'published';
+    draft.publishedAt = new Date().toISOString();
+    draft.updatedBy = publisherUserId;
+    draft.lockedBy = null;
+    draft.lockedAt = null;
+    return draft;
+  }
+
+  async discardDraft(draftId: string): Promise<void> {
+    const index = this.profiles.findIndex((p) => p.id === draftId && p.status === 'draft');
+    if (index >= 0) this.profiles.splice(index, 1);
+  }
+
+  async listVersionsForLineage(lineageId: string): Promise<PackProfile[]> {
+    return this.profiles
+      .filter((p) => p.lineageId === lineageId)
+      .sort((a, b) => b.version - a.version);
+  }
+
+  async getUserFullName(userId: string): Promise<string | null> {
+    return this.userNames[userId] ?? null;
+  }
+
+  /** Test-bekvemmelighed: sæt et brugernavn efter konstruktion. */
+  setUserName(userId: string, fullName: string): void {
+    this.userNames[userId] = fullName;
   }
 }
 

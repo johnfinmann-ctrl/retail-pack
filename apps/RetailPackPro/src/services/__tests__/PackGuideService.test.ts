@@ -35,6 +35,7 @@ const baseProfile: PackProfile = {
   lockedBy: null,
   lockedAt: null,
   publishedAt: null,
+  lineageId: 'profile-1',
 };
 
 const packagingItems: PackagingItem[] = [

@@ -1,3 +1,4 @@
+import { ConflictError, toAppError } from '@platform/config';
 import type { DataClient } from '@platform/data';
 
 import { mapPackFlowStepRow, mapPackProfileRow, mapReferenceImageRow } from '../../mappers';
@@ -12,6 +13,10 @@ interface PackProfileRowWithLinks {
   pack_profile_products: Array<{ product_id: string }> | null;
   [key: string]: unknown;
 }
+
+/* eslint-disable @typescript-eslint/no-explicit-any -- rå DB-række, kun brugt internt før mapPackProfileRow */
+type PackProfileRow = Record<string, any>;
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 export class SupabasePackProfileRepository implements PackProfileRepository {
   constructor(private readonly data: DataClient) {}
@@ -126,5 +131,167 @@ export class SupabasePackProfileRepository implements PackProfileRepository {
 
     const rows = productIds.map((productId) => ({ pack_profile_id: profileId, product_id: productId }));
     await this.data.runMany(this.data.schema(RPP_SCHEMA).from('pack_profile_products').insert(rows).select('*'));
+  }
+
+  // ---- Redigering af en allerede publiceret pakkemetode ----
+
+  async findDraftForLineage(lineageId: string): Promise<PackProfile | null> {
+    const row = await this.data.run(
+      this.data
+        .schema(RPP_SCHEMA)
+        .from('pack_profiles')
+        .select('*')
+        .eq('lineage_id', lineageId)
+        .eq('status', 'draft')
+        .maybeSingle(),
+    );
+    return row ? mapPackProfileRow(row) : null;
+  }
+
+  async createDraftFromPublished(publishedProfileId: string, editingUserId: string): Promise<PackProfile> {
+    const published = await this.data.run<PackProfileRow>(
+      this.data.schema(RPP_SCHEMA).from('pack_profiles').select('*').eq('id', publishedProfileId).single(),
+    );
+    if (!published) {
+      throw new Error(`Publiceret pakkemetode ${publishedProfileId} findes ikke`);
+    }
+
+    try {
+      const draftRow = await this.data.run<PackProfileRow>(
+        this.data
+          .schema(RPP_SCHEMA)
+          .from('pack_profiles')
+          .insert({
+            company_id: published.company_id,
+            customer_id: published.customer_id,
+            lineage_id: published.lineage_id,
+            name: published.name,
+            box_item_id: published.box_item_id,
+            inner_packaging_item_id: published.inner_packaging_item_id,
+            divider_item_id: published.divider_item_id,
+            corner_protector_item_id: published.corner_protector_item_id,
+            pallet_item_id: published.pallet_item_id,
+            placement_pattern_image_url: published.placement_pattern_image_url,
+            max_height_cm: published.max_height_cm,
+            max_weight_kg: published.max_weight_kg,
+            layer_count: published.layer_count,
+            mixed_pallet_allowed: published.mixed_pallet_allowed,
+            label_position: published.label_position,
+            sscc_label_required: published.sscc_label_required,
+            foil_type: published.foil_type,
+            overhang_allowed: published.overhang_allowed,
+            special_instructions_richtext: published.special_instructions_richtext,
+            version: published.version + 1,
+            status: 'draft',
+            created_by: editingUserId,
+            updated_by: editingUserId,
+            locked_by: editingUserId,
+            locked_at: new Date().toISOString(),
+          })
+          .select('*')
+          .single(),
+      );
+      if (!draftRow) {
+        throw new Error('Kladde kunne ikke oprettes');
+      }
+
+      // Kopiér hvilke produkter reglen gælder for, så kladden starter identisk
+      // med den publicerede version.
+      const existingLinks = await this.data.runMany<{ product_id: string }>(
+        this.data
+          .schema(RPP_SCHEMA)
+          .from('pack_profile_products')
+          .select('product_id')
+          .eq('pack_profile_id', publishedProfileId),
+      );
+      if (existingLinks.length > 0) {
+        await this.data.runMany(
+          this.data
+            .schema(RPP_SCHEMA)
+            .from('pack_profile_products')
+            .insert(existingLinks.map((link) => ({ pack_profile_id: draftRow.id, product_id: link.product_id })))
+            .select('*'),
+        );
+      }
+
+      return mapPackProfileRow(draftRow);
+    } catch (error) {
+      // Postgres 23505 = unique_violation. Rammes hvis en anden admin når at
+      // oprette kladden i det lille tidsrum mellem tjek og forsøg på oprettelse
+      // (samtidighed) — omsættes til ConflictError, så Services-laget kan
+      // fange den specifikt og genfremvise "en anden redigerer allerede".
+      // toAppError() (kaldt inde i this.data.run) gemmer den rå Postgrest-fejl
+      // i context.raw, fordi den ikke er en almindelig JS Error-instans.
+      const appError = toAppError(error);
+      const rawCode = (appError.context?.raw as { code?: string } | undefined)?.code;
+      if (rawCode === '23505') {
+        throw new ConflictError('En anden admin er allerede i gang med at redigere denne pakkemetode', {
+          lineageId: published.lineage_id,
+        });
+      }
+      throw appError;
+    }
+  }
+
+  async updateDraft(draftId: string, fields: Partial<NewPackProfile>): Promise<PackProfile> {
+    const row = await this.data.run(
+      this.data
+        .schema(RPP_SCHEMA)
+        .from('pack_profiles')
+        .update({
+          ...(fields.customerId !== undefined ? { customer_id: fields.customerId } : {}),
+          ...(fields.name !== undefined ? { name: fields.name } : {}),
+          ...(fields.palletItemId !== undefined ? { pallet_item_id: fields.palletItemId } : {}),
+          ...(fields.maxHeightCm !== undefined ? { max_height_cm: fields.maxHeightCm } : {}),
+          ...(fields.maxWeightKg !== undefined ? { max_weight_kg: fields.maxWeightKg } : {}),
+          ...(fields.layerCount !== undefined ? { layer_count: fields.layerCount } : {}),
+          ...(fields.mixedPalletAllowed !== undefined ? { mixed_pallet_allowed: fields.mixedPalletAllowed } : {}),
+          ...(fields.labelPosition !== undefined ? { label_position: fields.labelPosition } : {}),
+          ...(fields.foilType !== undefined ? { foil_type: fields.foilType } : {}),
+          ...(fields.specialInstructions !== undefined
+            ? { special_instructions_richtext: fields.specialInstructions }
+            : {}),
+        })
+        .eq('id', draftId)
+        .eq('status', 'draft') // en sikkerhedsspærre mere: kan aldrig ved en fejl ramme en publiceret række
+        .select('*')
+        .single(),
+    );
+    return mapPackProfileRow(row);
+  }
+
+  async publishDraft(draftId: string, publisherUserId: string): Promise<PackProfile> {
+    const row = await this.data.run(
+      this.data.schema(RPP_SCHEMA).rpc('publish_pack_profile_draft', {
+        draft_id: draftId,
+        publisher_id: publisherUserId,
+      }),
+    );
+    return mapPackProfileRow(row);
+  }
+
+  async discardDraft(draftId: string): Promise<void> {
+    await this.data.runMany(
+      this.data.schema(RPP_SCHEMA).from('pack_profiles').delete().eq('id', draftId).eq('status', 'draft').select('*'),
+    );
+  }
+
+  async listVersionsForLineage(lineageId: string): Promise<PackProfile[]> {
+    const rows = await this.data.runMany(
+      this.data
+        .schema(RPP_SCHEMA)
+        .from('pack_profiles')
+        .select('*')
+        .eq('lineage_id', lineageId)
+        .order('version', { ascending: false }),
+    );
+    return rows.map(mapPackProfileRow);
+  }
+
+  async getUserFullName(userId: string): Promise<string | null> {
+    const row = await this.data.run(
+      this.data.schema('public').from('users').select('full_name').eq('id', userId).maybeSingle(),
+    );
+    return row ? (row as { full_name: string }).full_name : null;
   }
 }

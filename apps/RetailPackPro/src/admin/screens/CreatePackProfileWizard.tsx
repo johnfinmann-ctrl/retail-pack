@@ -105,6 +105,7 @@ export function CreatePackProfileWizard({
         lockedBy: null,
         lockedAt: null,
         publishedAt: null,
+        lineageId: 'preview',
       },
       box: null,
       innerPackaging: null,

@@ -68,6 +68,8 @@ export interface PackProfile {
   lockedBy: string | null;
   lockedAt: string | null;
   publishedAt: string | null;
+  /** Binder alle versioner af SAMME logiske pakkemetode sammen (ikke vist i UI). */
+  lineageId: string;
 }
 
 export interface PackFlowStep {
