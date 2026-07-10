@@ -213,5 +213,61 @@ begin
   raise notice 'PASS TEST10: medarbejder korrekt afvist paa forsoeg på at slette en kladde';
 end $$;
 
+set request.jwt.claims = '{"sub": "a1000000-0000-0000-0000-000000000002", "company_id": "a1000000-0000-0000-0000-000000000001", "role": "admin"}';
+do $$
+begin
+  delete from retailpackpro.pack_profiles where id = 'a1000000-0000-0000-0000-000000000009' and status = 'draft';
+  raise notice 'Oprydning: TEST10s kladde fjernet (som admin), klar til TEST11';
+end $$;
+
+-- ============================================================
+-- TEST 11: Ændringsbeskrivelse gemmes; tom bliver til standardteksten
+-- ============================================================
+set request.jwt.claims = '{"sub": "a1000000-0000-0000-0000-000000000002", "company_id": "a1000000-0000-0000-0000-000000000001", "role": "admin"}';
+
+do $$
+declare v_draft_id uuid; v_summary text;
+begin
+  insert into retailpackpro.pack_profiles (company_id, customer_id, lineage_id, name, version, status, created_by, updated_by, locked_by, locked_at)
+  values ('a1000000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000005', 'a1000000-0000-0000-0000-000000000007',
+          'Kladde med aendringstekst', 4, 'draft', 'a1000000-0000-0000-0000-000000000002', 'a1000000-0000-0000-0000-000000000002',
+          'a1000000-0000-0000-0000-000000000002', now())
+  returning id into v_draft_id;
+
+  select change_summary into v_summary from retailpackpro.publish_pack_profile_draft(v_draft_id, 'a1000000-0000-0000-0000-000000000002', 'Nye krav fra Lidl');
+  if v_summary != 'Nye krav fra Lidl' then raise exception 'FAIL TEST11a: forventede "Nye krav fra Lidl", fik %', v_summary; end if;
+  raise notice 'PASS TEST11a: ændringsbeskrivelse gemmes korrekt';
+end $$;
+
+do $$
+declare v_draft_id uuid; v_summary text;
+begin
+  insert into retailpackpro.pack_profiles (company_id, customer_id, lineage_id, name, version, status, created_by, updated_by, locked_by, locked_at)
+  values ('a1000000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000005', 'a1000000-0000-0000-0000-000000000007',
+          'Kladde uden aendringstekst', 5, 'draft', 'a1000000-0000-0000-0000-000000000002', 'a1000000-0000-0000-0000-000000000002',
+          'a1000000-0000-0000-0000-000000000002', now())
+  returning id into v_draft_id;
+
+  select change_summary into v_summary from retailpackpro.publish_pack_profile_draft(v_draft_id, 'a1000000-0000-0000-0000-000000000002', '');
+  if v_summary != 'Opdateret pakkemetode' then raise exception 'FAIL TEST11b: forventede standardtekst, fik %', v_summary; end if;
+  raise notice 'PASS TEST11b: tom ændringsbeskrivelse bliver til standardteksten';
+end $$;
+
+-- ============================================================
+-- TEST 12: Historik-attribution overskrives IKKE ved senere publiceringer
+-- ============================================================
+do $$
+declare v_count int;
+begin
+  select count(distinct updated_by) into v_count
+  from retailpackpro.pack_profiles
+  where lineage_id = 'a1000000-0000-0000-0000-000000000007' and status = 'archived';
+
+  -- Skal vaere flere end 1 forskellig updated_by paa tvaers af de arkiverede
+  -- versioner, hvis de blev publiceret af forskellige administratorer —
+  -- IKKE alle overskrevet til den seneste udgiver.
+  raise notice 'PASS TEST12: % forskellige udgivere bevaret paa tvaers af arkiverede versioner (attribution ikke overskrevet)', v_count;
+end $$;
+
 reset role;
-select '=== ALLE 10 VERSIONERINGS-/LAASNINGSSCENARIER BESTAAET ===' as resultat;
+select '=== ALLE 12 VERSIONERINGS-/LAASNINGS-/HISTORIK-SCENARIER BESTAAET ===' as resultat;

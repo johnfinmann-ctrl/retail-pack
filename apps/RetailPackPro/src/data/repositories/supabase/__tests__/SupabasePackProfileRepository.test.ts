@@ -81,15 +81,15 @@ function makeFakeDataClient(overrides: { onSecondFromCall: 'unique_violation' | 
   } as unknown as DataClient;
 }
 
-describe('SupabasePackProfileRepository.createDraftFromPublished', () => {
+describe('SupabasePackProfileRepository.createDraftFromVersion', () => {
   it('konverterer Postgres unique_violation (23505) til en venlig ConflictError', async () => {
     const repo = new SupabasePackProfileRepository(makeFakeDataClient({ onSecondFromCall: 'unique_violation' }));
-    await expect(repo.createDraftFromPublished('published-1', 'user-1')).rejects.toBeInstanceOf(ConflictError);
+    await expect(repo.createDraftFromVersion('published-1', 'user-1')).rejects.toBeInstanceOf(ConflictError);
   });
 
   it('opretter kladden normalt, når der ikke er noget kapløb', async () => {
     const repo = new SupabasePackProfileRepository(makeFakeDataClient({ onSecondFromCall: 'success' }));
-    const draft = await repo.createDraftFromPublished('published-1', 'user-1');
+    const draft = await repo.createDraftFromVersion('published-1', 'user-1');
     expect(draft.status).toBe('draft');
   });
 });

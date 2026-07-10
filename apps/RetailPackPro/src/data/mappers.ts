@@ -82,6 +82,7 @@ export function mapPackProfileRow(row: any): PackProfile {
     lockedAt: row.locked_at,
     publishedAt: row.published_at,
     lineageId: row.lineage_id,
+    changeSummary: row.change_summary,
   };
 }
 

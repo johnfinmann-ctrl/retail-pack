@@ -19,6 +19,7 @@ import type {
   PackagingItemType,
   PackFlowStep,
   PackProfile,
+  PackProfileVersionSummary,
   PackSession,
   Product,
   ReferenceImage,
@@ -68,16 +69,25 @@ export interface PackProfileRepository {
 
   /** Finder en evt. igangværende kladde for samme "familie" af versioner (lineage). */
   findDraftForLineage(lineageId: string): Promise<PackProfile | null>;
-  /** Opretter en ny kladde-version som kopi af den publicerede, låst til den redigerende admin. */
-  createDraftFromPublished(publishedProfileId: string, editingUserId: string): Promise<PackProfile>;
+  /**
+   * Opretter en ny kladde-version som kopi af EN VILKÅRLIG tidligere version
+   * (publiceret ELLER arkiveret) — bruges både til normal redigering
+   * (kopi af den aktuelt publicerede) og til "Gendan denne version"
+   * (kopi af en arkiveret version). Låst til den redigerende admin.
+   */
+  createDraftFromVersion(sourceVersionId: string, editingUserId: string): Promise<PackProfile>;
   /** Gemmer ændringer i kladden UDEN at publicere — låsen bevares. */
   updateDraft(draftId: string, fields: Partial<NewPackProfile>): Promise<PackProfile>;
-  /** Atomisk: kladden bliver aktiv, den tidligere version arkiveres, låsen frigives. */
-  publishDraft(draftId: string, publisherUserId: string): Promise<PackProfile>;
+  /**
+   * Atomisk: kladden bliver aktiv, den tidligere version arkiveres (uden at
+   * dens egen historik overskrives), låsen frigives. changeSummary gemmes
+   * på den nye version — tom streng bliver til "Opdateret pakkemetode".
+   */
+  publishDraft(draftId: string, publisherUserId: string, changeSummary?: string | null): Promise<PackProfile>;
   /** Sletter kladden (aldrig en publiceret/arkiveret version) — frigiver derved låsen. */
   discardDraft(draftId: string): Promise<void>;
-  /** Til "Se tidligere versioner" — alle versioner (publiceret/arkiveret/evt. kladde) i samme familie. */
-  listVersionsForLineage(lineageId: string): Promise<PackProfile[]>;
+  /** Til "Se tidligere versioner" — kun de fire tilladte felter, ingen tekniske detaljer. */
+  listVersionSummaries(lineageId: string): Promise<PackProfileVersionSummary[]>;
   /** Til at vise "X redigerer denne pakkemetode lige nu". */
   getUserFullName(userId: string): Promise<string | null>;
 }

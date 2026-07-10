@@ -16,6 +16,7 @@ import type {
   PackagingItemType,
   PackFlowStep,
   PackProfile,
+  PackProfileVersionSummary,
   PackSession,
   Product,
   ReferenceImage,
@@ -171,6 +172,7 @@ export class FakePackProfileRepository implements PackProfileRepository {
       lockedAt: null,
       publishedAt: null,
       lineageId: id,
+      changeSummary: null,
     };
     this.profiles.push(created);
     return created;
@@ -195,32 +197,36 @@ export class FakePackProfileRepository implements PackProfileRepository {
     return this.profiles.find((p) => p.lineageId === lineageId && p.status === 'draft') ?? null;
   }
 
-  async createDraftFromPublished(publishedProfileId: string, editingUserId: string): Promise<PackProfile> {
-    const published = this.profiles.find((p) => p.id === publishedProfileId);
-    if (!published) throw new Error(`Fake: profil ${publishedProfileId} findes ikke`);
+  async createDraftFromVersion(sourceVersionId: string, editingUserId: string): Promise<PackProfile> {
+    const source = this.profiles.find((p) => p.id === sourceVersionId);
+    if (!source) throw new Error(`Fake: version ${sourceVersionId} findes ikke`);
 
-    const existingDraft = this.profiles.find((p) => p.lineageId === published.lineageId && p.status === 'draft');
+    const existingDraft = this.profiles.find((p) => p.lineageId === source.lineageId && p.status === 'draft');
     if (existingDraft) {
       throw new ConflictError('En anden admin er allerede i gang med at redigere denne pakkemetode', {
-        lineageId: published.lineageId,
+        lineageId: source.lineageId,
       });
     }
 
+    const currentPublished = this.profiles.find((p) => p.lineageId === source.lineageId && p.status === 'published');
+    const nextVersion = (currentPublished?.version ?? source.version) + 1;
+
     const id = `fake-profile-${this.nextId++}`;
     const draft: PackProfile = {
-      ...published,
+      ...source,
       id,
-      version: published.version + 1,
+      version: nextVersion,
       status: 'draft',
       createdBy: editingUserId,
       updatedBy: editingUserId,
       lockedBy: editingUserId,
       lockedAt: new Date().toISOString(),
       publishedAt: null,
+      changeSummary: null,
     };
     this.profiles.push(draft);
 
-    const links = this.productLinks[publishedProfileId];
+    const links = this.productLinks[sourceVersionId];
     if (links && links.length > 0) {
       this.productLinksWritten[id] = [...links];
     }
@@ -243,18 +249,20 @@ export class FakePackProfileRepository implements PackProfileRepository {
     return draft;
   }
 
-  async publishDraft(draftId: string, publisherUserId: string): Promise<PackProfile> {
+  async publishDraft(draftId: string, publisherUserId: string, changeSummary?: string | null): Promise<PackProfile> {
     const draft = this.profiles.find((p) => p.id === draftId && p.status === 'draft');
     if (!draft) throw new Error(`Fake: kladde ${draftId} findes ikke`);
 
-    // Arkivér den tidligere publicerede version i samme lineage (samme regel som den ægte funktion)
+    // Arkivér den tidligere publicerede version — UDEN at røre dens egen
+    // historik (samme rettelse som i den ægte Postgres-funktion).
     for (const p of this.profiles) {
       if (p.lineageId === draft.lineageId && p.status === 'published') {
         p.status = 'archived';
-        p.updatedBy = publisherUserId;
       }
     }
 
+    const trimmed = changeSummary?.trim();
+    draft.changeSummary = trimmed && trimmed.length > 0 ? trimmed : 'Opdateret pakkemetode';
     draft.status = 'published';
     draft.publishedAt = new Date().toISOString();
     draft.updatedBy = publisherUserId;
@@ -268,10 +276,18 @@ export class FakePackProfileRepository implements PackProfileRepository {
     if (index >= 0) this.profiles.splice(index, 1);
   }
 
-  async listVersionsForLineage(lineageId: string): Promise<PackProfile[]> {
+  async listVersionSummaries(lineageId: string): Promise<PackProfileVersionSummary[]> {
     return this.profiles
       .filter((p) => p.lineageId === lineageId)
-      .sort((a, b) => b.version - a.version);
+      .sort((a, b) => b.version - a.version)
+      .map((p) => ({
+        id: p.id,
+        version: p.version,
+        isCurrent: p.status === 'published',
+        date: p.publishedAt ?? '',
+        userName: p.updatedBy ? (this.userNames[p.updatedBy] ?? null) : null,
+        changeSummary: p.changeSummary,
+      }));
   }
 
   async getUserFullName(userId: string): Promise<string | null> {

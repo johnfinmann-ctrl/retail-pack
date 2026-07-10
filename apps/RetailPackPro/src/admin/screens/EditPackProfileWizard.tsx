@@ -1,8 +1,7 @@
 /**
- * Redigering af en ALLEREDE PUBLICERET pakkemetode. Samme to-trins guide
- * + preview som ved oprettelse (CreatePackProfileWizard) — men her på en
- * kladde, der er en kopi af den publicerede version, aldrig direkte på
- * den publicerede række selv.
+ * Redigering af en ALLEREDE PUBLICERET pakkemetode — og "Gendan denne
+ * version" (samme komponent, forskellig kilde-version at kopiere fra).
+ * Samme to-trins guide + preview som ved oprettelse.
  *
  * Ingen tekniske begreber: admin ser aldrig "draft/published/archived",
  * kun handlingerne "Gem, men vis ikke endnu", "Publicér", "Annullér".
@@ -17,21 +16,25 @@ import { useT } from '../../i18n/I18nProvider';
 import type { PackGuide } from '../../services';
 import { getServices } from '../../servicesClient';
 
-type Phase = 'checking' | 'locked' | 'method' | 'preview';
+type Phase = 'checking' | 'locked' | 'locked_readonly' | 'method' | 'preview';
 
 export function EditPackProfileWizard({
   session,
   profile,
+  /** Sæt kun ved "Gendan denne version" — id'et på den historiske version, der skal kopieres fra. */
+  restoreFromVersionId,
   onDone,
 }: {
   session: PlatformSession;
   profile: PackProfile;
+  restoreFromVersionId?: string;
   onDone: () => void;
 }) {
   const { t } = useT();
   const [phase, setPhase] = useState<Phase>('checking');
   const [draft, setDraft] = useState<PackProfile | null>(null);
   const [lockedByName, setLockedByName] = useState('');
+  const [lockedDraftPreview, setLockedDraftPreview] = useState<PackProfile | null>(null);
 
   const [palletTypes, setPalletTypes] = useState<PackagingItem[]>([]);
   const [palletItemId, setPalletItemId] = useState('');
@@ -42,44 +45,50 @@ export function EditPackProfileWizard({
   const [foilType, setFoilType] = useState('');
   const [mixedPalletAllowed, setMixedPalletAllowed] = useState(false);
   const [specialInstructions, setSpecialInstructions] = useState('');
+  const [changeSummary, setChangeSummary] = useState('');
   const [saving, setSaving] = useState(false);
   const [previewGuide, setPreviewGuide] = useState<PackGuide | null>(null);
 
   useEffect(() => {
     let isMounted = true;
-    getServices()
-      .packProfileEditing.startEditing(profile, session.userId)
-      .then((result) => {
-        if (!isMounted) return;
-        if (result.outcome === 'locked_by_other') {
-          setLockedByName(result.lockedByName);
-          setPhase('locked');
-          return;
-        }
-        const d = result.draft;
-        setDraft(d);
-        setPalletItemId(d.palletItemId ?? '');
-        setLayerCount(d.layerCount?.toString() ?? '');
-        setMaxHeightCm(d.maxHeightCm?.toString() ?? '');
-        setMaxWeightKg(d.maxWeightKg?.toString() ?? '');
-        setLabelPosition(d.labelPosition ?? '');
-        setFoilType(d.foilType ?? '');
-        setMixedPalletAllowed(d.mixedPalletAllowed ?? false);
-        setSpecialInstructions(d.specialInstructions ?? '');
-        setPhase('method');
-      });
+    const sourceId = restoreFromVersionId ?? profile.id;
+    const start =
+      restoreFromVersionId !== undefined
+        ? getServices().packProfileEditing.restoreVersion(profile.lineageId, sourceId, session.userId)
+        : getServices().packProfileEditing.startEditing(profile, session.userId);
+
+    start.then((result) => {
+      if (!isMounted) return;
+      if (result.outcome === 'locked_by_other') {
+        setLockedByName(result.lockedByName);
+        setLockedDraftPreview(result.draftPreview);
+        setPhase('locked');
+        return;
+      }
+      const d = result.draft;
+      setDraft(d);
+      setPalletItemId(d.palletItemId ?? '');
+      setLayerCount(d.layerCount?.toString() ?? '');
+      setMaxHeightCm(d.maxHeightCm?.toString() ?? '');
+      setMaxWeightKg(d.maxWeightKg?.toString() ?? '');
+      setLabelPosition(d.labelPosition ?? '');
+      setFoilType(d.foilType ?? '');
+      setMixedPalletAllowed(d.mixedPalletAllowed ?? false);
+      setSpecialInstructions(d.specialInstructions ?? '');
+      setPhase('method');
+    });
     return () => {
       isMounted = false;
     };
-  }, [profile, session.userId]);
+  }, [profile, restoreFromVersionId, session.userId]);
 
   useEffect(() => {
     getServices().packaging.listPalletTypes(session.companyId).then(setPalletTypes);
   }, [session.companyId]);
 
-  function handlePreview() {
+  function buildPreviewGuide(): PackGuide {
     const pallet = palletTypes.find((p) => p.id === palletItemId) ?? null;
-    setPreviewGuide({
+    return {
       profile: {
         ...(draft as PackProfile),
         palletItemId: pallet?.id ?? null,
@@ -98,8 +107,7 @@ export function EditPackProfileWizard({
       pallet,
       referenceImages: [],
       activeFlowSteps: [],
-    });
-    setPhase('preview');
+    };
   }
 
   async function persistDraftFields(): Promise<void> {
@@ -131,7 +139,7 @@ export function EditPackProfileWizard({
     setSaving(true);
     try {
       await persistDraftFields();
-      await getServices().packProfileEditing.publish(draft.id, session.userId);
+      await getServices().packProfileEditing.publish(draft.id, session.userId, changeSummary);
       onDone();
     } finally {
       setSaving(false);
@@ -159,17 +167,50 @@ export function EditPackProfileWizard({
         <p style={{ fontSize: 16, marginBottom: 16 }}>
           {t('retailpackpro.admin.wizard.locked_by_other').replace('{name}', lockedByName)}
         </p>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <Button variant="secondary" size="admin" onClick={() => setPhase('locked_readonly')}>
+            {t('retailpackpro.admin.wizard.open_readonly')}
+          </Button>
+          <Button variant="primary" size="admin" onClick={onDone}>
+            {t('retailpackpro.admin.wizard.try_again_later')}
+          </Button>
+        </div>
+      </Card>
+    );
+  }
+
+  if (phase === 'locked_readonly') {
+    const readonlyGuide: PackGuide = {
+      profile: lockedDraftPreview as PackProfile,
+      box: null,
+      innerPackaging: null,
+      divider: null,
+      cornerProtector: null,
+      pallet: palletTypes.find((p) => p.id === lockedDraftPreview?.palletItemId) ?? null,
+      referenceImages: [],
+      activeFlowSteps: [],
+    };
+    return (
+      <div>
+        <p style={{ fontSize: 13, color: '#5c5c66', marginBottom: 16 }}>
+          {t('retailpackpro.admin.wizard.readonly_hint').replace('{name}', lockedByName)}
+        </p>
+        <div style={{ border: '1px solid #e2e2e5', borderRadius: 12, padding: 16, marginBottom: 16 }}>
+          <PackGuideScreen guide={readonlyGuide} showPackaging={false} onApprove={() => {}} submitting={true} />
+        </div>
         <Button variant="secondary" size="admin" onClick={onDone}>
           {t('core.actions.back')}
         </Button>
-      </Card>
+      </div>
     );
   }
 
   if (phase === 'method') {
     return (
       <Card style={{ padding: 24 }}>
-        <h2 style={{ marginBottom: 16 }}>{t('retailpackpro.admin.wizard.edit_title')}</h2>
+        <h2 style={{ marginBottom: 16 }}>
+          {restoreFromVersionId ? t('retailpackpro.admin.wizard.restore_title') : t('retailpackpro.admin.wizard.edit_title')}
+        </h2>
 
         <label style={{ display: 'block', fontSize: 13, marginBottom: 4 }}>
           {t('retailpackpro.admin.wizard.pallet_type_label')}
@@ -260,7 +301,15 @@ export function EditPackProfileWizard({
           <Button variant="secondary" size="admin" disabled={saving} onClick={() => void handleCancelEditing()}>
             {t('retailpackpro.admin.wizard.cancel_editing_button')}
           </Button>
-          <Button variant="primary" size="admin" onClick={handlePreview}>
+          <Button
+            variant="primary"
+            size="admin"
+            disabled={!palletItemId}
+            onClick={() => {
+              setPreviewGuide(buildPreviewGuide());
+              setPhase('preview');
+            }}
+          >
             {t('retailpackpro.admin.wizard.preview_button')}
           </Button>
         </div>
@@ -279,6 +328,17 @@ export function EditPackProfileWizard({
           <PackGuideScreen guide={previewGuide} showPackaging={false} onApprove={() => {}} submitting={true} />
         )}
       </div>
+
+      <label style={{ display: 'block', fontSize: 13, marginBottom: 4 }}>
+        {t('retailpackpro.admin.wizard.change_summary_label')}
+      </label>
+      <input
+        value={changeSummary}
+        onChange={(e) => setChangeSummary(e.target.value)}
+        placeholder={t('retailpackpro.admin.wizard.change_summary_placeholder')}
+        maxLength={100}
+        style={{ width: '100%', padding: 10, marginBottom: 16, borderRadius: 8, border: '1px solid #e2e2e5' }}
+      />
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <Button variant="secondary" size="admin" onClick={() => setPhase('method')}>

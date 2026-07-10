@@ -70,6 +70,24 @@ export interface PackProfile {
   publishedAt: string | null;
   /** Binder alle versioner af SAMME logiske pakkemetode sammen (ikke vist i UI). */
   lineageId: string;
+  /** "Beskriv kort ændringen" — sat ved publicering, aldrig for version 1. */
+  changeSummary: string | null;
+}
+
+/**
+ * Til "Se tidligere versioner". Bevidst en SEPARAT, minimal type — kun de
+ * fire ting admin må se (versionsnummer, dato, bruger, ændringsbeskrivelse).
+ * Ingen tekniske databasefelter (status som ord, id'er, låsefelter osv.)
+ * lækker igennem denne type.
+ */
+export interface PackProfileVersionSummary {
+  id: string;
+  version: number;
+  /** true for den version, der er aktiv/synlig for medarbejdere lige nu. */
+  isCurrent: boolean;
+  date: string;
+  userName: string | null;
+  changeSummary: string | null;
 }
 
 export interface PackFlowStep {

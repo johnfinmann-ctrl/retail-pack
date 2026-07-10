@@ -2,7 +2,7 @@ import { ConflictError, toAppError } from '@platform/config';
 import type { DataClient } from '@platform/data';
 
 import { mapPackFlowStepRow, mapPackProfileRow, mapReferenceImageRow } from '../../mappers';
-import type { NewPackProfile, PackFlowStep, PackProfile, ReferenceImage } from '../../types';
+import type { NewPackProfile, PackFlowStep, PackProfile, PackProfileVersionSummary, ReferenceImage } from '../../types';
 import type { PackProfileRepository } from '../interfaces';
 
 import { RPP_SCHEMA } from './schema';
@@ -148,12 +148,12 @@ export class SupabasePackProfileRepository implements PackProfileRepository {
     return row ? mapPackProfileRow(row) : null;
   }
 
-  async createDraftFromPublished(publishedProfileId: string, editingUserId: string): Promise<PackProfile> {
+  async createDraftFromVersion(sourceVersionId: string, editingUserId: string): Promise<PackProfile> {
     const published = await this.data.run<PackProfileRow>(
-      this.data.schema(RPP_SCHEMA).from('pack_profiles').select('*').eq('id', publishedProfileId).single(),
+      this.data.schema(RPP_SCHEMA).from('pack_profiles').select('*').eq('id', sourceVersionId).single(),
     );
     if (!published) {
-      throw new Error(`Publiceret pakkemetode ${publishedProfileId} findes ikke`);
+      throw new Error(`Version ${sourceVersionId} findes ikke`);
     }
 
     try {
@@ -196,13 +196,13 @@ export class SupabasePackProfileRepository implements PackProfileRepository {
       }
 
       // Kopiér hvilke produkter reglen gælder for, så kladden starter identisk
-      // med den publicerede version.
+      // med kilde-versionen.
       const existingLinks = await this.data.runMany<{ product_id: string }>(
         this.data
           .schema(RPP_SCHEMA)
           .from('pack_profile_products')
           .select('product_id')
-          .eq('pack_profile_id', publishedProfileId),
+          .eq('pack_profile_id', sourceVersionId),
       );
       if (existingLinks.length > 0) {
         await this.data.runMany(
@@ -260,11 +260,12 @@ export class SupabasePackProfileRepository implements PackProfileRepository {
     return mapPackProfileRow(row);
   }
 
-  async publishDraft(draftId: string, publisherUserId: string): Promise<PackProfile> {
-    const row = await this.data.run(
+  async publishDraft(draftId: string, publisherUserId: string, changeSummary?: string | null): Promise<PackProfile> {
+    const row = await this.data.run<PackProfileRow>(
       this.data.schema(RPP_SCHEMA).rpc('publish_pack_profile_draft', {
         draft_id: draftId,
         publisher_id: publisherUserId,
+        change_summary: changeSummary ?? null,
       }),
     );
     return mapPackProfileRow(row);
@@ -276,16 +277,33 @@ export class SupabasePackProfileRepository implements PackProfileRepository {
     );
   }
 
-  async listVersionsForLineage(lineageId: string): Promise<PackProfile[]> {
-    const rows = await this.data.runMany(
+  async listVersionSummaries(lineageId: string): Promise<PackProfileVersionSummary[]> {
+    const rows = await this.data.runMany<PackProfileRow>(
       this.data
         .schema(RPP_SCHEMA)
         .from('pack_profiles')
-        .select('*')
+        .select('id, version, status, published_at, created_at, change_summary, updated_by')
         .eq('lineage_id', lineageId)
         .order('version', { ascending: false }),
     );
-    return rows.map(mapPackProfileRow);
+
+    // Slår brugernavne op ét ad gangen — antallet af versioner pr.
+    // pakkemetode er lille nok til at N+1 her ikke er et reelt problem.
+    const names = new Map<string, string | null>();
+    for (const row of rows) {
+      if (row.updated_by && !names.has(row.updated_by)) {
+        names.set(row.updated_by, await this.getUserFullName(row.updated_by));
+      }
+    }
+
+    return rows.map((row) => ({
+      id: row.id,
+      version: row.version,
+      isCurrent: row.status === 'published',
+      date: row.published_at ?? row.created_at,
+      userName: row.updated_by ? (names.get(row.updated_by) ?? null) : null,
+      changeSummary: row.change_summary,
+    }));
   }
 
   async getUserFullName(userId: string): Promise<string | null> {

@@ -2,30 +2,52 @@
  * Redigering af en allerede publiceret pakkemetode. Al forretningslogik
  * for låsning, versionering og publicering ligger HER — Admin-UI'et
  * kender kun til handlingerne "Redigér", "Gem, men vis ikke endnu",
- * "Publicér" og "Annullér". Ordene "draft"/"published"/"archived"/
- * "lock_owner"/"version_number" optræder ALDRIG uden for dette lag.
+ * "Publicér", "Annullér" og "Gendan denne version". Ordene "draft"/
+ * "published"/"archived"/"lock_owner"/"version_number" optræder ALDRIG
+ * uden for dette lag.
  */
 import { ConflictError } from '@platform/config';
 
 import type { Repositories } from '../data/repositories/interfaces';
-import type { NewPackProfile, PackProfile } from '../data/types';
+import type { NewPackProfile, PackProfile, PackProfileVersionSummary } from '../data/types';
 
 export type StartEditingResult =
   | { outcome: 'ready'; draft: PackProfile }
-  | { outcome: 'locked_by_other'; lockedByName: string; lockedAt: string };
+  | {
+      outcome: 'locked_by_other';
+      lockedByName: string;
+      lockedAt: string;
+      /** Den låste kladdes indhold — til "Åbn skrivebeskyttet". */
+      draftPreview: PackProfile;
+    };
 
 export class PackProfileEditingService {
   constructor(private readonly repos: Pick<Repositories, 'packProfiles'>) {}
 
-  /**
-   * Kaldes når admin trykker "Redigér" på en publiceret pakkemetode.
-   * Genbruger en allerede igangværende kladde, hvis admin selv ejer den
-   * (fx admin lukkede browseren og kom tilbage). Opretter en ny kladde,
-   * hvis der ingen findes. Viser tydeligt hvem der redigerer, hvis en
-   * ANDEN admin allerede er i gang.
-   */
+  /** Kaldes når admin trykker "Redigér" på en publiceret pakkemetode. */
   async startEditing(publishedProfile: PackProfile, editingUserId: string): Promise<StartEditingResult> {
-    const existingDraft = await this.repos.packProfiles.findDraftForLineage(publishedProfile.lineageId);
+    return this.beginDraft(publishedProfile.lineageId, publishedProfile.id, editingUserId);
+  }
+
+  /**
+   * Kaldes når admin trykker "Gendan denne version" på en tidligere
+   * (arkiveret) version. Opretter en ny kladde som kopi af DEN version —
+   * historikken overskrives aldrig, der oprettes altid en ny version.
+   */
+  async restoreVersion(
+    lineageId: string,
+    sourceVersionId: string,
+    editingUserId: string,
+  ): Promise<StartEditingResult> {
+    return this.beginDraft(lineageId, sourceVersionId, editingUserId);
+  }
+
+  private async beginDraft(
+    lineageId: string,
+    sourceVersionId: string,
+    editingUserId: string,
+  ): Promise<StartEditingResult> {
+    const existingDraft = await this.repos.packProfiles.findDraftForLineage(lineageId);
 
     if (existingDraft) {
       if (existingDraft.lockedBy && existingDraft.lockedBy !== editingUserId) {
@@ -33,7 +55,8 @@ export class PackProfileEditingService {
         return {
           outcome: 'locked_by_other',
           lockedByName: lockedByName ?? 'En anden administrator',
-          lockedAt: existingDraft.lockedAt ?? existingDraft.createdBy ?? '',
+          lockedAt: existingDraft.lockedAt ?? '',
+          draftPreview: existingDraft,
         };
       }
       // Egen kladde, eller en kladde uden lås (defensivt tilfælde) — fortsæt med den.
@@ -41,14 +64,13 @@ export class PackProfileEditingService {
     }
 
     try {
-      const draft = await this.repos.packProfiles.createDraftFromPublished(publishedProfile.id, editingUserId);
+      const draft = await this.repos.packProfiles.createDraftFromVersion(sourceVersionId, editingUserId);
       return { outcome: 'ready', draft };
     } catch (error) {
       // Kapløb: en anden admin nåede at oprette kladden i tidsrummet mellem
-      // vores tjek og vores forsøg på oprettelse (se ADR/kommentar i
-      // SupabasePackProfileRepository). Genfremvis samme "optaget"-besked.
+      // vores tjek og vores forsøg på oprettelse.
       if (error instanceof ConflictError) {
-        const raceDraft = await this.repos.packProfiles.findDraftForLineage(publishedProfile.lineageId);
+        const raceDraft = await this.repos.packProfiles.findDraftForLineage(lineageId);
         const lockedByName = raceDraft?.lockedBy
           ? await this.repos.packProfiles.getUserFullName(raceDraft.lockedBy)
           : null;
@@ -56,6 +78,7 @@ export class PackProfileEditingService {
           outcome: 'locked_by_other',
           lockedByName: lockedByName ?? 'En anden administrator',
           lockedAt: raceDraft?.lockedAt ?? '',
+          draftPreview: raceDraft as PackProfile,
         };
       }
       throw error;
@@ -67,9 +90,14 @@ export class PackProfileEditingService {
     return this.repos.packProfiles.updateDraft(draftId, fields);
   }
 
-  /** "Publicér" — atomisk: kladden bliver aktiv, den gamle arkiveres, låsen frigives. */
-  publish(draftId: string, publisherUserId: string): Promise<PackProfile> {
-    return this.repos.packProfiles.publishDraft(draftId, publisherUserId);
+  /**
+   * "Publicér" — atomisk: kladden bliver aktiv, den gamle arkiveres (uden
+   * at miste sin egen historik), låsen frigives. `changeSummary` er
+   * valgfri fritekst ("Beskriv kort ændringen") — tom bliver til
+   * "Opdateret pakkemetode".
+   */
+  publish(draftId: string, publisherUserId: string, changeSummary?: string | null): Promise<PackProfile> {
+    return this.repos.packProfiles.publishDraft(draftId, publisherUserId, changeSummary);
   }
 
   /** "Annullér" — kladden slettes, den publicerede version forbliver uændret, låsen frigives. */
@@ -77,9 +105,9 @@ export class PackProfileEditingService {
     return this.repos.packProfiles.discardDraft(draftId);
   }
 
-  /** "Se tidligere versioner". */
-  listVersionHistory(lineageId: string): Promise<PackProfile[]> {
-    return this.repos.packProfiles.listVersionsForLineage(lineageId);
+  /** "Se tidligere versioner" — kun version, dato, bruger, ændringsbeskrivelse. */
+  listVersionHistory(lineageId: string): Promise<PackProfileVersionSummary[]> {
+    return this.repos.packProfiles.listVersionSummaries(lineageId);
   }
 
   /**
