@@ -5,30 +5,21 @@
     },
     "scan": {
       "title": "Scan or search item",
-      "search_placeholder": "Search product",
-      "search_button": "Search manually",
+      "search_placeholder": "Barcode, item number or name",
       "not_found": "Item not found",
       "report_missing": "Report missing item"
     },
-    "packaging": {
-      "title": "Packaging"
-    },
     "pallet": {
-      "title": "Pallet & placement",
       "max_height": "Max height",
       "max_weight": "Max weight",
       "layers": "Layers",
       "mixed_pallet": "Mixed pallet"
     },
     "approve": {
-      "title": "Ready to approve",
-      "button": "Hold to approve",
+      "button": "Approve",
       "confirmation": "Approved"
     },
-    "no_profile_found": "No packing rule found for this combination",
-    "flow": {
-      "step_of": "of"
-    },
+    "no_profile_found": "We don't have a packing guide for this item for this customer yet",
     "admin": {
       "nav": {
         "dashboard": "Dashboard",

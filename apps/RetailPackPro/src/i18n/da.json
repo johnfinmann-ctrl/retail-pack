@@ -5,30 +5,21 @@
     },
     "scan": {
       "title": "Scan eller søg vare",
-      "search_placeholder": "Søg produkt",
-      "search_button": "Søg vare manuelt",
+      "search_placeholder": "Stregkode, varenummer eller navn",
       "not_found": "Vare ikke fundet",
       "report_missing": "Meld manglende vare"
     },
-    "packaging": {
-      "title": "Emballage"
-    },
     "pallet": {
-      "title": "Palle & placering",
       "max_height": "Maks højde",
       "max_weight": "Maks vægt",
       "layers": "Lag",
       "mixed_pallet": "Mixpalle"
     },
     "approve": {
-      "title": "Klar til godkendelse",
-      "button": "Hold for at godkende",
+      "button": "Godkend",
       "confirmation": "Godkendt"
     },
-    "no_profile_found": "Ingen pakkeregel fundet for denne kombination",
-    "flow": {
-      "step_of": "af"
-    },
+    "no_profile_found": "Vi har ikke en pakkevejledning for denne vare til denne kunde endnu",
     "admin": {
       "nav": {
         "dashboard": "Dashboard",

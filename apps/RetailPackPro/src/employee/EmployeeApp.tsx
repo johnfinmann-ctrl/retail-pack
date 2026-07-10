@@ -1,39 +1,47 @@
 /**
- * Medarbejderflowet: kundevalg → scan/søg → (emballage) → palle → godkend.
+ * Medarbejderflowet efter Sprint 3's forenkling: "Scan. Se. Pak."
+ * Kunde → scan/søg → pakkemetode (med indbygget godkend) → automatisk
+ * tilbage til scan. Typisk 3 tryk i alt (kunde, scan, godkend).
+ *
  * Al forretningslogik hentes via @/servicesClient (Services-laget) —
  * denne fil kalder ALDRIG repositories eller Supabase direkte.
- *
- * Antallet af skærme mellem scan og godkend er dynamisk, styret af
- * FlowEngine.buildScreenSequence(guide.activeFlowSteps) — jf. PRS §17.3.
  */
 import type { PlatformSession } from '@platform/shared-types';
 import { EmployeeShell } from '@platform/ui';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import type { Customer, Product } from '../data/types';
 import { useT } from '../i18n/I18nProvider';
 import { getServices } from '../servicesClient';
 
-import { buildScreenSequence } from './FlowEngine';
-import { ApproveScreen } from './screens/ApproveScreen';
+import { shouldShowPackaging } from './FlowEngine';
 import { CustomerSelectScreen } from './screens/CustomerSelectScreen';
 import { NoProfileFoundScreen } from './screens/NoProfileFoundScreen';
-import { PackagingScreen } from './screens/PackagingScreen';
-import { PalletScreen } from './screens/PalletScreen';
+import { PackGuideScreen } from './screens/PackGuideScreen';
 import { ScanScreen } from './screens/ScanScreen';
 import type { EmployeeFlowState } from './types';
+
+/** Hvor længe godkendt-kvitteringen vises, før flowet automatisk fortsætter (design-princip 5). */
+const AUTO_ADVANCE_MS = 1200;
 
 export function EmployeeApp({ session }: { session: PlatformSession }) {
   const { t } = useT();
   const [state, setState] = useState<EmployeeFlowState>({ screen: 'select-customer' });
   const [submitting, setSubmitting] = useState(false);
+  const autoAdvanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (autoAdvanceTimer.current) clearTimeout(autoAdvanceTimer.current);
+    };
+  }, []);
 
   function handleSelectCustomer(customer: Customer) {
     setState({ screen: 'scan', customer });
   }
 
   async function handleProductFound(customer: Customer, product: Product) {
-    setState({ screen: 'loading-guide', customer, product });
+    setState({ screen: 'loading-guide', customer });
 
     const guide = await getServices().packGuide.getGuideFor(session.companyId, customer.id, product.id);
 
@@ -42,16 +50,7 @@ export function EmployeeApp({ session }: { session: PlatformSession }) {
       return;
     }
 
-    const sequence = buildScreenSequence(guide.activeFlowSteps);
-    setState({ screen: 'guide', customer, product, guide, sequence, stepIndex: 0 });
-  }
-
-  function handleNextStep() {
-    if (state.screen !== 'guide') return;
-    const nextIndex = state.stepIndex + 1;
-    if (nextIndex < state.sequence.length) {
-      setState({ ...state, stepIndex: nextIndex });
-    }
+    setState({ screen: 'guide', customer, product, guide });
   }
 
   async function handleApprove() {
@@ -67,6 +66,10 @@ export function EmployeeApp({ session }: { session: PlatformSession }) {
         packProfileId: guide.profile.id,
       });
       setState({ screen: 'approved', customer });
+      // Automatisk tilbage til scan — ingen ekstra tryk skal til (design-princip 5).
+      autoAdvanceTimer.current = setTimeout(() => {
+        setState({ screen: 'scan', customer });
+      }, AUTO_ADVANCE_MS);
     } finally {
       setSubmitting(false);
     }
@@ -110,43 +113,23 @@ export function EmployeeApp({ session }: { session: PlatformSession }) {
         </EmployeeShell>
       );
 
-    case 'guide': {
-      const currentStepKey = state.sequence[state.stepIndex];
-      const stepIndicator = `${state.stepIndex + 1} ${t('retailpackpro.flow.step_of')} ${state.sequence.length}`;
-
+    case 'guide':
       return (
-        <EmployeeShell
-          backLabel={backLabel}
-          onBack={() => handleBackToScan(state.customer)}
-          stepIndicator={stepIndicator}
-        >
-          {currentStepKey === 'packaging' && <PackagingScreen guide={state.guide} onNext={handleNextStep} />}
-          {currentStepKey === 'pallet' && <PalletScreen guide={state.guide} onNext={handleNextStep} />}
-          {currentStepKey === 'approve' && <ApproveScreen onApprove={() => void handleApprove()} submitting={submitting} />}
-        </EmployeeShell>
-      );
-    }
-
-    case 'approving':
-      return (
-        <EmployeeShell backLabel={backLabel}>
-          <p>…</p>
+        <EmployeeShell backLabel={backLabel} onBack={() => handleBackToScan(state.customer)}>
+          <PackGuideScreen
+            guide={state.guide}
+            showPackaging={shouldShowPackaging(state.guide.activeFlowSteps)}
+            onApprove={() => void handleApprove()}
+            submitting={submitting}
+          />
         </EmployeeShell>
       );
 
     case 'approved':
       return (
         <EmployeeShell backLabel={backLabel}>
-          <div style={{ textAlign: 'center', marginTop: 48 }}>
-            <p style={{ fontSize: 24, color: '#1e8e3e', marginBottom: 24 }}>
-              ✓✓✓ {t('retailpackpro.approve.confirmation')}
-            </p>
-            <button
-              onClick={() => handleBackToScan(state.customer)}
-              style={{ padding: 12, fontSize: 16, borderRadius: 8, border: 'none', backgroundColor: '#1a2b4c', color: '#fff' }}
-            >
-              {t('retailpackpro.scan.title')}
-            </button>
+          <div style={{ textAlign: 'center', marginTop: 64 }}>
+            <p style={{ fontSize: 32, color: '#1e8e3e' }}>✓ {t('retailpackpro.approve.confirmation')}</p>
           </div>
         </EmployeeShell>
       );

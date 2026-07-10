@@ -1,6 +1,10 @@
 /**
  * Første skærm i medarbejderflowet. Henter kunder UDELUKKENDE via
  * CustomerService — aldrig CustomerRepository eller Supabase direkte.
+ *
+ * Automatik (design-princip 5): findes der kun ÉN aktiv kunde, springes
+ * hele skærmen over — medarbejderen skal ikke vælge noget, der ikke er
+ * et reelt valg.
  */
 import { Card } from '@platform/ui';
 import { useEffect, useState } from 'react';
@@ -24,7 +28,12 @@ export function CustomerSelectScreen({ companyId, onSelect }: CustomerSelectScre
     getServices()
       .customers.listActiveCustomers(companyId)
       .then((result) => {
-        if (isMounted) setCustomers(result);
+        if (!isMounted) return;
+        if (result.length === 1) {
+          onSelect(result[0]!); // kun ét valg findes — det er ikke et valg
+          return;
+        }
+        setCustomers(result);
       })
       .catch(() => {
         if (isMounted) setError(t('core.errors.generic'));
@@ -49,8 +58,15 @@ export function CustomerSelectScreen({ companyId, onSelect }: CustomerSelectScre
               key={customer.id}
               onClick={() => onSelect(customer)}
               role="button"
-              style={{ cursor: 'pointer', textAlign: 'center', padding: 24 }}
+              style={{ cursor: 'pointer', textAlign: 'center', padding: 24, minHeight: 120 }}
             >
+              {customer.logoUrl && (
+                <img
+                  src={customer.logoUrl}
+                  alt=""
+                  style={{ width: '100%', height: 56, objectFit: 'contain', marginBottom: 8 }}
+                />
+              )}
               <strong style={{ fontSize: 18 }}>{customer.name}</strong>
             </Card>
           ))}
