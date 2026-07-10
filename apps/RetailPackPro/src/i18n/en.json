@@ -25,6 +25,9 @@
       "button": "Hold to approve",
       "confirmation": "Approved"
     },
-    "no_profile_found": "No packing rule found for this combination"
+    "no_profile_found": "No packing rule found for this combination",
+    "flow": {
+      "step_of": "of"
+    }
   }
 }

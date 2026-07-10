@@ -13,6 +13,7 @@
     { "path": "../../packages/data" },
     { "path": "../../packages/logging" },
     { "path": "../../packages/offline" },
+    { "path": "../../packages/scanner" },
     { "path": "../../packages/translations" },
     { "path": "../../packages/ui" },
     { "path": "../../shared/types" }

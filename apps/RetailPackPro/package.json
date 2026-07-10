@@ -16,6 +16,7 @@
     "@platform/data": "*",
     "@platform/logging": "*",
     "@platform/offline": "*",
+    "@platform/scanner": "*",
     "@platform/shared-types": "*",
     "@platform/shared-utils": "*",
     "@platform/translations": "*",

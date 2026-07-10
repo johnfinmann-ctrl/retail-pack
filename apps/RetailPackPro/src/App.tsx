@@ -32,7 +32,7 @@ export function App() {
   }
 
   if (session.role === 'medarbejder') {
-    return <EmployeeApp />;
+    return <EmployeeApp session={session} />;
   }
 
   // admin, teamleder og superadmin ser alle Admin-skallen i Sprint 2 — en

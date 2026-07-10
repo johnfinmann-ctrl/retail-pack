@@ -25,6 +25,9 @@
       "button": "Hold for at godkende",
       "confirmation": "Godkendt"
     },
-    "no_profile_found": "Ingen pakkeregel fundet for denne kombination"
+    "no_profile_found": "Ingen pakkeregel fundet for denne kombination",
+    "flow": {
+      "step_of": "af"
+    }
   }
 }
