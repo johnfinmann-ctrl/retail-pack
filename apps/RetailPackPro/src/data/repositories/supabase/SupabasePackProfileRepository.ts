@@ -1,7 +1,7 @@
 import type { DataClient } from '@platform/data';
 
 import { mapPackFlowStepRow, mapPackProfileRow, mapReferenceImageRow } from '../../mappers';
-import type { PackFlowStep, PackProfile, ReferenceImage } from '../../types';
+import type { NewPackProfile, PackFlowStep, PackProfile, ReferenceImage } from '../../types';
 import type { PackProfileRepository } from '../interfaces';
 
 import { RPP_SCHEMA } from './schema';
@@ -75,5 +75,56 @@ export class SupabasePackProfileRepository implements PackProfileRepository {
         .order('name'),
     );
     return rows.map(mapPackProfileRow);
+  }
+
+  async create(input: NewPackProfile): Promise<PackProfile> {
+    const row = await this.data.run(
+      this.data
+        .schema(RPP_SCHEMA)
+        .from('pack_profiles')
+        .insert({
+          company_id: input.companyId,
+          customer_id: input.customerId,
+          name: input.name,
+          pallet_item_id: input.palletItemId ?? null,
+          max_height_cm: input.maxHeightCm ?? null,
+          max_weight_kg: input.maxWeightKg ?? null,
+          layer_count: input.layerCount ?? null,
+          mixed_pallet_allowed: input.mixedPalletAllowed ?? null,
+          label_position: input.labelPosition ?? null,
+          foil_type: input.foilType ?? null,
+          special_instructions_richtext: input.specialInstructions ?? null,
+          status: 'draft',
+          created_by: input.createdBy,
+          updated_by: input.createdBy,
+        })
+        .select('*')
+        .single(),
+    );
+    return mapPackProfileRow(row);
+  }
+
+  async publish(profileId: string, publishedByUserId: string): Promise<PackProfile> {
+    const row = await this.data.run(
+      this.data
+        .schema(RPP_SCHEMA)
+        .from('pack_profiles')
+        .update({
+          status: 'published',
+          published_at: new Date().toISOString(),
+          updated_by: publishedByUserId,
+        })
+        .eq('id', profileId)
+        .select('*')
+        .single(),
+    );
+    return mapPackProfileRow(row);
+  }
+
+  async setProductLinks(profileId: string, productIds: readonly string[]): Promise<void> {
+    if (productIds.length === 0) return; // ingen rækker = gælder for alle (PRS §2.2) — intet at skrive
+
+    const rows = productIds.map((productId) => ({ pack_profile_id: profileId, product_id: productId }));
+    await this.data.runMany(this.data.schema(RPP_SCHEMA).from('pack_profile_products').insert(rows).select('*'));
   }
 }

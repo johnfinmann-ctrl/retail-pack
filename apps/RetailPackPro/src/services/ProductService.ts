@@ -1,5 +1,5 @@
 import type { Repositories } from '../data/repositories/interfaces';
-import type { Product } from '../data/types';
+import type { NewProduct, Product } from '../data/types';
 
 export class ProductService {
   constructor(private readonly repos: Pick<Repositories, 'products'>) {}
@@ -16,5 +16,9 @@ export class ProductService {
   /** Til Admin's grundlæggende produktoversigt. */
   listAll(companyId: string): Promise<Product[]> {
     return this.repos.products.listAll(companyId);
+  }
+
+  createProduct(input: NewProduct): Promise<Product> {
+    return this.repos.products.create(input);
   }
 }

@@ -10,8 +10,13 @@
  */
 import type {
   Customer,
+  NewCustomer,
+  NewPackagingItem,
+  NewPackProfile,
   NewPackSession,
+  NewProduct,
   PackagingItem,
+  PackagingItemType,
   PackFlowStep,
   PackProfile,
   PackSession,
@@ -22,6 +27,7 @@ import type {
 export interface CustomerRepository {
   listActive(companyId: string): Promise<Customer[]>;
   getById(customerId: string): Promise<Customer | null>;
+  create(input: NewCustomer): Promise<Customer>;
 }
 
 export interface ProductRepository {
@@ -30,10 +36,14 @@ export interface ProductRepository {
   getById(productId: string): Promise<Product | null>;
   /** Til Admin's grundlæggende produktoversigt (PRS §9 Admin). */
   listAll(companyId: string): Promise<Product[]>;
+  create(input: NewProduct): Promise<Product>;
 }
 
 export interface PackagingRepository {
   listByIds(ids: readonly string[]): Promise<PackagingItem[]>;
+  /** Til Admin's palletype-vælger — kun én type ad gangen (fx 'pallet_type'). */
+  listByType(companyId: string, type: PackagingItemType): Promise<PackagingItem[]>;
+  create(input: NewPackagingItem): Promise<PackagingItem>;
 }
 
 export interface PackProfileRepository {
@@ -48,6 +58,11 @@ export interface PackProfileRepository {
   listReferenceImages(packProfileId: string): Promise<ReferenceImage[]>;
   /** Til Admin's grundlæggende oversigt — ALLE statusser (draft/published/archived). */
   listAllForCompany(companyId: string): Promise<PackProfile[]>;
+  /** Opretter altid som kladde — Admin-UI'et ser aldrig dette ord, kun handlingen "Gem". */
+  create(input: NewPackProfile): Promise<PackProfile>;
+  /** Sætter status til publiceret + published_at — Admin-UI'et kalder det bare "Publicér". */
+  publish(profileId: string, publishedByUserId: string): Promise<PackProfile>;
+  setProductLinks(profileId: string, productIds: readonly string[]): Promise<void>;
 }
 
 export interface PackSessionRepository {

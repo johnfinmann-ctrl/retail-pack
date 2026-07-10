@@ -17,3 +17,13 @@ describe('CustomerService', () => {
     expect(result[0]?.name).toBe('Demo A');
   });
 });
+
+describe('CustomerService.createCustomer', () => {
+  it('opretter en ny kunde', async () => {
+    const repo = new FakeCustomerRepository([]);
+    const service = new CustomerService({ customers: repo });
+    const created = await service.createCustomer({ companyId: 'company-1', name: 'Ny Demo Kunde' });
+    expect(created.name).toBe('Ny Demo Kunde');
+    expect(created.id).toBeDefined();
+  });
+});

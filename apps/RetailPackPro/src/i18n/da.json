@@ -25,12 +25,12 @@
         "dashboard": "Dashboard",
         "customers": "Kunder",
         "products": "Produkter",
-        "pack_profiles": "Pakkeprofiler"
+        "pack_profiles": "Pakkemetoder"
       },
       "dashboard": {
         "customers_count": "Aktive kunder",
         "products_count": "Produkter",
-        "profiles_count": "Pakkeprofiler"
+        "profiles_count": "Pakkemetoder"
       },
       "status": {
         "draft": "Kladde",
@@ -40,7 +40,41 @@
       "empty": {
         "customers": "Ingen kunder oprettet endnu",
         "products": "Ingen produkter oprettet endnu",
-        "pack_profiles": "Ingen pakkeprofiler oprettet endnu"
+        "pack_profiles": "Ingen pakkemetoder oprettet endnu"
+      },
+      "customers": {
+        "new": "+ Ny kunde",
+        "name_label": "Navn",
+        "logo_label": "Logo (valgfrit — link til billede)"
+      },
+      "products": {
+        "new": "+ Nyt produkt",
+        "name_label": "Navn",
+        "barcode_label": "Stregkode / varenummer",
+        "image_label": "Billede (valgfrit — link til billede)"
+      },
+      "pack_profiles": {
+        "new": "+ Ny pakkemetode"
+      },
+      "wizard": {
+        "who_title": "Hvem gælder det for?",
+        "customer_label": "Kunde",
+        "products_label": "Produkter",
+        "products_hint": "Vælg intet for at lade den gælde for alle kundens produkter",
+        "method_title": "Pakkemetoden",
+        "pallet_type_label": "Palletype",
+        "pallet_type_new": "+ Opret ny palletype",
+        "pallet_type_name_placeholder": "Navn på palletype",
+        "image_url_placeholder": "Link til billede",
+        "label_position_label": "Labelplacering",
+        "foil_type_label": "Folie",
+        "instruction_label": "Én vigtig instruktion (valgfrit)",
+        "instruction_placeholder": "Kort — vises direkte på medarbejderens skærm",
+        "preview_button": "Se hvordan det ser ud →",
+        "preview_title": "Sådan ser medarbejderen det",
+        "preview_hint": "Dette er PRÆCIS den skærm, en medarbejder vil se",
+        "save_draft_button": "Gem, men vis ikke endnu",
+        "publish_button": "Publicér"
       }
     }
   }

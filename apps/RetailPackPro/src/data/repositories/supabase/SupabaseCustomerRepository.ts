@@ -1,7 +1,7 @@
 import type { DataClient } from '@platform/data';
 
 import { mapCustomerRow } from '../../mappers';
-import type { Customer } from '../../types';
+import type { Customer, NewCustomer } from '../../types';
 import type { CustomerRepository } from '../interfaces';
 
 import { RPP_SCHEMA } from './schema';
@@ -33,5 +33,17 @@ export class SupabaseCustomerRepository implements CustomerRepository {
         .maybeSingle(),
     );
     return row ? mapCustomerRow(row) : null;
+  }
+
+  async create(input: NewCustomer): Promise<Customer> {
+    const row = await this.data.run(
+      this.data
+        .schema(RPP_SCHEMA)
+        .from('customers')
+        .insert({ company_id: input.companyId, name: input.name, logo_url: input.logoUrl ?? null })
+        .select('*')
+        .single(),
+    );
+    return mapCustomerRow(row);
   }
 }

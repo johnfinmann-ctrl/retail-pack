@@ -25,12 +25,12 @@
         "dashboard": "Dashboard",
         "customers": "Customers",
         "products": "Products",
-        "pack_profiles": "Pack profiles"
+        "pack_profiles": "Pack methods"
       },
       "dashboard": {
         "customers_count": "Active customers",
         "products_count": "Products",
-        "profiles_count": "Pack profiles"
+        "profiles_count": "Pack methods"
       },
       "status": {
         "draft": "Draft",
@@ -40,7 +40,41 @@
       "empty": {
         "customers": "No customers created yet",
         "products": "No products created yet",
-        "pack_profiles": "No pack profiles created yet"
+        "pack_profiles": "No pack methods created yet"
+      },
+      "customers": {
+        "new": "+ New customer",
+        "name_label": "Name",
+        "logo_label": "Logo (optional — image link)"
+      },
+      "products": {
+        "new": "+ New product",
+        "name_label": "Name",
+        "barcode_label": "Barcode / item number",
+        "image_label": "Image (optional — image link)"
+      },
+      "pack_profiles": {
+        "new": "+ New pack method"
+      },
+      "wizard": {
+        "who_title": "Who is this for?",
+        "customer_label": "Customer",
+        "products_label": "Products",
+        "products_hint": "Select none to apply to all of the customer's products",
+        "method_title": "The pack method",
+        "pallet_type_label": "Pallet type",
+        "pallet_type_new": "+ Create new pallet type",
+        "pallet_type_name_placeholder": "Pallet type name",
+        "image_url_placeholder": "Image link",
+        "label_position_label": "Label position",
+        "foil_type_label": "Foil",
+        "instruction_label": "One important instruction (optional)",
+        "instruction_placeholder": "Short — shown directly on the employee's screen",
+        "preview_button": "See what it looks like →",
+        "preview_title": "This is what the employee sees",
+        "preview_hint": "This is EXACTLY the screen an employee will see",
+        "save_draft_button": "Save, but don't show yet",
+        "publish_button": "Publish"
       }
     }
   }

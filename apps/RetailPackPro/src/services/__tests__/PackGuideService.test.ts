@@ -120,3 +120,61 @@ describe('PackGuideService (helt uden Supabase — kun fakes)', () => {
     expect(profiles).toHaveLength(2);
   });
 });
+
+describe('PackGuideService.createProfile + publishProfile', () => {
+  it('opretter en profil som kladde og knytter valgte produkter', async () => {
+    const packProfiles = new FakePackProfileRepository([], {}, [], []);
+    const service = new PackGuideService({
+      packProfiles,
+      packaging: new FakePackagingRepository([]),
+    });
+
+    const created = await service.createProfile({
+      companyId: 'company-1',
+      customerId: 'customer-1',
+      name: 'Ny profil',
+      createdBy: 'admin-1',
+      productIds: ['product-a', 'product-b'],
+    });
+
+    expect(created.status).toBe('draft');
+    expect(packProfiles.productLinksWritten[created.id]).toEqual(['product-a', 'product-b']);
+  });
+
+  it('opretter en profil UDEN produkt-links, hvis ingen er angivet (gælder for alle)', async () => {
+    const packProfiles = new FakePackProfileRepository([], {}, [], []);
+    const service = new PackGuideService({
+      packProfiles,
+      packaging: new FakePackagingRepository([]),
+    });
+
+    const created = await service.createProfile({
+      companyId: 'company-1',
+      customerId: 'customer-1',
+      name: 'Ny profil for alle',
+      createdBy: 'admin-1',
+    });
+
+    expect(packProfiles.productLinksWritten[created.id]).toBeUndefined();
+  });
+
+  it('publicerer en profil — status skifter fra kladde til publiceret', async () => {
+    const packProfiles = new FakePackProfileRepository([], {}, [], []);
+    const service = new PackGuideService({
+      packProfiles,
+      packaging: new FakePackagingRepository([]),
+    });
+
+    const created = await service.createProfile({
+      companyId: 'company-1',
+      customerId: 'customer-1',
+      name: 'Profil til publicering',
+      createdBy: 'admin-1',
+    });
+    expect(created.status).toBe('draft');
+
+    const published = await service.publishProfile(created.id, 'admin-1');
+    expect(published.status).toBe('published');
+    expect(published.publishedAt).not.toBeNull();
+  });
+});

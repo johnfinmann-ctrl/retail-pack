@@ -10,7 +10,7 @@
 import { isDefined } from '@platform/shared-utils';
 
 import type { Repositories } from '../data/repositories/interfaces';
-import type { PackagingItem, PackFlowStep, PackProfile, ReferenceImage } from '../data/types';
+import type { NewPackProfile, PackagingItem, PackFlowStep, PackProfile, ReferenceImage } from '../data/types';
 
 export interface PackGuide {
   profile: PackProfile;
@@ -68,5 +68,24 @@ export class PackGuideService {
   /** Til Admin's grundlæggende pakkeprofil-oversigt — ALLE statusser. */
   listProfilesForCompany(companyId: string) {
     return this.repos.packProfiles.listAllForCompany(companyId);
+  }
+
+  /**
+   * Opretter en ny pakkemetode (altid som kladde) og knytter den til de
+   * valgte produkter — eller til ALLE kundens produkter, hvis ingen er
+   * angivet eksplicit (PRS §2.2). Admin-UI'et kender ikke til "kladde"
+   * som begreb — det ser kun handlingen "Gem".
+   */
+  async createProfile(input: NewPackProfile): Promise<PackProfile> {
+    const profile = await this.repos.packProfiles.create(input);
+    if (input.productIds && input.productIds.length > 0) {
+      await this.repos.packProfiles.setProductLinks(profile.id, input.productIds);
+    }
+    return profile;
+  }
+
+  /** Gør profilen synlig for medarbejdere. Admin-UI'et kalder det bare "Publicér". */
+  publishProfile(profileId: string, publishedByUserId: string): Promise<PackProfile> {
+    return this.repos.packProfiles.publish(profileId, publishedByUserId);
   }
 }

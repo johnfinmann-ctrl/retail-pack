@@ -48,9 +48,9 @@ export function AdminApp({ session }: { session: PlatformSession }) {
   return (
     <AdminShell sections={renderedSections} companyName="RetailPackPro">
       {active === 'dashboard' && <DashboardScreen companyId={session.companyId} />}
-      {active === 'customers' && <CustomersScreen companyId={session.companyId} />}
-      {active === 'products' && <ProductsScreen companyId={session.companyId} />}
-      {active === 'pack_profiles' && <PackProfilesScreen companyId={session.companyId} />}
+      {active === 'customers' && <CustomersScreen session={session} />}
+      {active === 'products' && <ProductsScreen session={session} />}
+      {active === 'pack_profiles' && <PackProfilesScreen session={session} />}
     </AdminShell>
   );
 }

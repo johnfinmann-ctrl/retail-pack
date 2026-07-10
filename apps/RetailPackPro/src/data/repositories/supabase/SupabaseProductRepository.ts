@@ -1,7 +1,7 @@
 import type { DataClient } from '@platform/data';
 
 import { mapProductRow } from '../../mappers';
-import type { Product } from '../../types';
+import type { Product, NewProduct } from '../../types';
 import type { ProductRepository } from '../interfaces';
 
 import { RPP_SCHEMA } from './schema';
@@ -62,5 +62,22 @@ export class SupabaseProductRepository implements ProductRepository {
         .order('name'),
     );
     return rows.map(mapProductRow);
+  }
+
+  async create(input: NewProduct): Promise<Product> {
+    const row = await this.data.run(
+      this.data
+        .schema(RPP_SCHEMA)
+        .from('products')
+        .insert({
+          company_id: input.companyId,
+          ean: input.ean,
+          name: input.name,
+          image_url: input.imageUrl ?? null,
+        })
+        .select('*')
+        .single(),
+    );
+    return mapProductRow(row);
   }
 }

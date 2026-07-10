@@ -110,3 +110,40 @@ export interface NewPackSession {
   stepsCompleted?: Record<string, unknown>;
   deviceInfo?: Record<string, unknown>;
 }
+
+export interface NewCustomer {
+  companyId: string;
+  name: string;
+  logoUrl?: string | null;
+}
+
+export interface NewProduct {
+  companyId: string;
+  ean: string;
+  name: string;
+  imageUrl?: string | null;
+}
+
+export interface NewPackagingItem {
+  companyId: string;
+  type: PackagingItemType;
+  name: string;
+  imageUrl?: string | null;
+}
+
+export interface NewPackProfile {
+  companyId: string;
+  customerId: string;
+  name: string;
+  palletItemId?: string | null;
+  maxHeightCm?: number | null;
+  maxWeightKg?: number | null;
+  layerCount?: number | null;
+  mixedPalletAllowed?: boolean | null;
+  labelPosition?: string | null;
+  foilType?: string | null;
+  specialInstructions?: string | null;
+  createdBy: string;
+  /** Tom/udeladt = gælder for alle kundens produkter (PRS §2.2). */
+  productIds?: string[];
+}

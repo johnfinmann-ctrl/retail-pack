@@ -33,3 +33,13 @@ describe('ProductService', () => {
     expect(result).toHaveLength(1);
   });
 });
+
+describe('ProductService.createProduct', () => {
+  it('opretter et nyt produkt', async () => {
+    const repo = new FakeProductRepository([]);
+    const service = new ProductService({ products: repo });
+    const created = await service.createProduct({ companyId: 'company-1', ean: '5900000000097', name: 'Nyt Testprodukt' });
+    expect(created.name).toBe('Nyt Testprodukt');
+    expect(created.ean).toBe('5900000000097');
+  });
+});
