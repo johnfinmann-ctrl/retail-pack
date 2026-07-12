@@ -74,7 +74,7 @@ insert into retailpackpro.pack_profiles (
   pallet_item_id, placement_pattern_image_url, max_height_cm, max_weight_kg, layer_count,
   mixed_pallet_allowed, label_position, sscc_label_required, foil_type, overhang_allowed,
   special_instructions_richtext,
-  version, status, effective_from, published_at
+  version, status, effective_from, published_at, lineage_id
 ) values (
   '40000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001',
   '10000000-0000-0000-0000-000000000001', 'Demo Supermarked A/S — Standardprofil (demo)',
@@ -83,7 +83,7 @@ insert into retailpackpro.pack_profiles (
   '30000000-0000-0000-0000-000000000006', '/assets/demo/placement-pattern-placeholder.svg',
   150, 500, 6, false, 'Kortside, øverste hjørne', true, 'Klar strækfolie', false,
   'DEMO-TEKST (dansk): Kontroller at hjørnebeskyttere sidder korrekt før strækfolie påføres.',
-  1, 'published', now(), now()
+  1, 'published', now(), now(), '40000000-0000-0000-0000-000000000001'
 );
 
 -- 5b) Test Discount ApS — KUN palleguide, publiceret
@@ -92,14 +92,14 @@ insert into retailpackpro.pack_profiles (
   pallet_item_id, placement_pattern_image_url, max_height_cm, max_weight_kg, layer_count,
   mixed_pallet_allowed, label_position, sscc_label_required, foil_type, overhang_allowed,
   special_instructions_richtext,
-  version, status, effective_from, published_at
+  version, status, effective_from, published_at, lineage_id
 ) values (
   '40000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001',
   '10000000-0000-0000-0000-000000000002', 'Test Discount ApS — Palleguide (demo)',
   '30000000-0000-0000-0000-000000000007', '/assets/demo/placement-pattern-simple-placeholder.svg',
   100, 300, 4, true, 'Langside, centreret', false, 'Sort strækfolie', true,
   'DEMO-TEKST (dansk): Mixpalle tilladt for denne kunde — bland aldrig mere end 3 varenumre pr. lag.',
-  1, 'published', now(), now()
+  1, 'published', now(), now(), '40000000-0000-0000-0000-000000000002'
 );
 
 -- 5c) Demo Retail International (EN test) — engelsksproget demo-indhold, DRAFT
@@ -110,7 +110,7 @@ insert into retailpackpro.pack_profiles (
   max_height_cm, max_weight_kg, layer_count, mixed_pallet_allowed,
   label_position, sscc_label_required, foil_type, overhang_allowed,
   special_instructions_richtext,
-  version, status
+  version, status, lineage_id
 ) values (
   '40000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000001',
   '10000000-0000-0000-0000-000000000003', 'Demo Retail International — Draft Profile (EN demo)',
@@ -118,7 +118,7 @@ insert into retailpackpro.pack_profiles (
   '/assets/demo/placement-pattern-placeholder.svg',
   140, 450, 5, false, 'Short side, top corner', true, 'Clear stretch film', false,
   'DEMO TEXT (English): Verify SSCC label is scanned before approving. This profile is a DRAFT and must not be visible to employees yet.',
-  1, 'draft'
+  1, 'draft', '40000000-0000-0000-0000-000000000003'
 );
 
 -- ----------------------------------------------------------------------------

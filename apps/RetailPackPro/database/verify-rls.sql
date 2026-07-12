@@ -37,9 +37,9 @@ insert into retailpackpro.customers (id, company_id, name) values
 insert into retailpackpro.products (id, company_id, ean, name) values
   ('d0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', '5701234567890', 'Testprodukt A');
 
-insert into retailpackpro.pack_profiles (id, company_id, customer_id, name, status, max_height_cm) values
-  ('e0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', 'c0000000-0000-0000-0000-000000000001', 'Draft-profil', 'draft', 120),
-  ('e0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001', 'c0000000-0000-0000-0000-000000000001', 'Publiceret profil', 'published', 150);
+insert into retailpackpro.pack_profiles (id, company_id, customer_id, name, status, max_height_cm, lineage_id) values
+  ('e0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', 'c0000000-0000-0000-0000-000000000001', 'Draft-profil', 'draft', 120, 'e0000000-0000-0000-0000-000000000001'),
+  ('e0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001', 'c0000000-0000-0000-0000-000000000001', 'Publiceret profil', 'published', 150, 'e0000000-0000-0000-0000-000000000002');
 
 insert into retailpackpro.pack_flow_steps (company_id, step_key, sort_order, enabled) values
   ('a0000000-0000-0000-0000-000000000001', 'packaging', 1, true),
