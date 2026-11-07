@@ -1,0 +1,30 @@
+{
+  "name": "@apps/retailpackpro-demo",
+  "version": "0.4.0",
+  "private": true,
+  "description": "RetailPackPro Demo v0.4.0 — klikbar demo uden Supabase. Genbruger v0.3.0's services og domænemodel; udskifter kun datalaget.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && node scripts/make-artifact.mjs",
+    "preview": "vite preview",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@platform/config": "*",
+    "@platform/shared-types": "*",
+    "@platform/shared-utils": "*",
+    "@platform/translations": "*",
+    "@zxing/browser": "0.1.5",
+    "@zxing/library": "0.21.3",
+    "jsbarcode": "3.11.6",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "fake-indexeddb": "6.0.0",
+    "vite": "^5.4.21",
+    "vite-plugin-singlefile": "2.0.3"
+  }
+}
