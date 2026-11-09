@@ -12,6 +12,21 @@ import { illustrationDataUri } from './illustrations';
 
 export const LOCAL_IMAGE_PREFIX = 'local-image:';
 
+/**
+ * v0.5 registrerer sit eget fillager her. Uden registrering bruges v0.4.0's
+ * services (uændret adfærd for referenceversionen).
+ */
+interface MediaBackend {
+  getFile(id: string): Promise<Blob | null>;
+  putFile(id: string, data: Blob): Promise<void>;
+}
+let backend: MediaBackend | null = null;
+export function setMediaBackend(b: MediaBackend): void {
+  backend = b;
+}
+const files = (): MediaBackend =>
+  backend ?? { getFile: (id) => getServices().db.blobs.get(id), putFile: (id, d) => getServices().db.blobs.put(id, d) };
+
 /** Skalerer til maks. `maxSide` px og gemmer som JPEG — typisk 150–400 kB pr. foto. */
 export async function compressImage(file: Blob, maxSide = 1600, quality = 0.8): Promise<PreparedPhoto> {
   const bitmap = await loadBitmap(file);
@@ -58,7 +73,7 @@ async function loadBitmap(file: Blob): Promise<{ source: CanvasImageSource; widt
 export async function storeUploadedImage(file: Blob, maxSide = 1400): Promise<string> {
   const prepared = await compressImage(file, maxSide, 0.82);
   const id = newId();
-  await getServices().db.blobs.put(id, prepared.data);
+  await files().putFile(id, prepared.data);
   return LOCAL_IMAGE_PREFIX + id;
 }
 
@@ -79,7 +94,7 @@ async function resolveSrc(src: string | null | undefined, photoId?: string): Pro
   if (src.startsWith(LOCAL_IMAGE_PREFIX)) {
     const cached = objectUrlCache.get(src);
     if (cached) return cached;
-    const blob = await getServices().db.blobs.get(src.slice(LOCAL_IMAGE_PREFIX.length));
+    const blob = await files().getFile(src.slice(LOCAL_IMAGE_PREFIX.length));
     if (!blob) return null;
     const url = URL.createObjectURL(blob);
     objectUrlCache.set(src, url);

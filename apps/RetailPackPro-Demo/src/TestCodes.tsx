@@ -11,7 +11,7 @@ import { t } from './i18n';
 import { getServices } from './services';
 import { useAsync } from './ui/common';
 
-function Barcode({ value, format }: { value: string; format: 'EAN13' | 'CODE128' }) {
+export function Barcode({ value, format }: { value: string; format: 'EAN13' | 'CODE128' }) {
   const ref = useRef<SVGSVGElement>(null);
   useEffect(() => {
     if (!ref.current) return;

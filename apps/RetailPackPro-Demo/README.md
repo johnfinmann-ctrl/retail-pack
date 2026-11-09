@@ -1,4 +1,57 @@
-# RetailPackPro Demo v0.4.0
+# RetailPackPro Demo v0.5 — kædernes pakkekrav
+
+Klikbar browserdemo uden Supabase, login og AX-forbindelse. Den videreudvikler v0.4.0.
+v0.4.0 er bevaret som fungerende referenceversion (`reference/retailpackpro-demo-v0.4.0.html`,
+tag `v0.4.0-demo`). v0.3.0 og Platform Core er uændrede.
+
+## Formål
+
+Appen viser **detailkædernes** officielle krav til palleopbygning, sikring, folie og mærkning
+pr. modtagelager. Kravene kommer fra kæderne, ikke fra leverandøren. Non-food indgår ikke.
+RetailPackPro erstatter ikke AX: ordrer, varer, antal og partier styres fortsat i
+Microsoft Dynamics AX 2009.
+
+## Sådan virker det
+
+| Del | Indhold |
+|---|---|
+| Forside (medarbejder) | **Pallevejledning** · **Ordrer & paller** · **Historik** |
+| Regelbank | Detailkæde → Kædeformat → Modtagelager → Regelsæt. Hvert krav har kildedokument, afsnit/side, dokumentversion og gyldighed. |
+| Regelmotor (`src/v5/domain/RuleResolver.ts`) | Det mest specifikke dokumenterede krav vinder (lager → format → kæde). **Konflikt** giver STOP. Krav, der er **uklare**, **mangler** (obligatoriske felter) eller har en **udløbet kilde**, giver Afklaring. **Ingen godkendte krav** giver "Afventer officiel vejledning". Appen opfinder aldrig en pakkemetode. |
+| Arbejdsgang | Udkast → Afventer kontrol → Godkendt til visning → Udgået. Regelansvarlig opretter, en **anden person** (kontrollant) godkender og publicerer. Der er fuld versionshistorik. |
+| Plukrute | Scan den øverste stregkode på pluklisten. Parti-ID'er og salgsordrenumre genkendes og åbner ikke ordren. Opslaget sker i lokale testordrer, ikke i AX. |
+| Pallekontrol | Kontrolpunkter fra de gældende krav. **Godkendt til forsendelse** kræver gældende krav, alle punkter OK og mindst ét foto. Ellers er det en **afvigelse**, som kræver begrundelse og foto og aldrig bliver godkendt. |
+| Foto | Op til 35 pr. ordre. Fotos kan erstattes. Fotos på registrerede paller kan ikke slettes. |
+| Sporbarhed | Hver registrering gemmer, hvilke regelsæt (version) og kildedokumenter der gjaldt. |
+
+## Testdata
+
+- **Salling Group** (Netto · Netto Årslev, Netto Køge), **Coop** (SuperBrugsen), **Dagrofa**, **Reitan** og **Lidl**:
+  ingen pakkeregler. De står som "Afventer officiel vejledning".
+- **Testkæde (fiktiv)** afprøver regelmotoren:
+  - Testlager Nord og Syd har forskellige krav.
+  - Vest har en konflikt.
+  - Øst har et uklart krav og en udløbet kilde.
+  - Der findes et udkast og en version, der afventer kontrol.
+- Plukrute **204874**, salgsordre **334327**, SuperBrugsen Vig, Coop. Lokal testordre efter Carlettis eksempel.
+
+## Kode
+
+- `src/v5/domain/`: typer, felter, regelmotor, `RuleService` og `RegistrationService`, CONFIG og unit-test.
+  Skrevet mod `DataStore`-kontrakten, så det kan flyttes direkte til Supabase.
+- `src/v5/data/`: lokalt lager (localStorage + IndexedDB) og testdata.
+- `src/v5/employee/`, `src/v5/admin/`: skærme. Genbruger designsystem, scanner, kamera og billedmodul fra v0.4.0.
+- v0.4.0-koden ligger i `src/` (App.tsx, employee/, orders/, admin/, domain/) og testes fortsat. To delte moduler (`ui/media.tsx`, `demo/storage.ts`) har fået en lille udvidelse: et valgfrit billedlager og et valgfrit IndexedDB-navn. Adfærden i v0.4.0 er uændret.
+
+## Lagring
+
+Data ligger kun i den aktuelle browser på den aktuelle enhed og overlever genindlæsning.
+De nulstilles med *Menu → Nulstil demo* eller ved at rydde browserdata. v0.5 bruger egne
+lagernøgler, så v0.4.0-referencen ikke påvirkes.
+
+---
+
+# Tidligere: RetailPackPro Demo v0.4.0
 
 Klikbar demo af RetailPackPro uden Supabase, uden login og uden database.
 Bygget videre på v0.3.0 (commit `a4995ab`). v0.3.0, Platform Core og alle

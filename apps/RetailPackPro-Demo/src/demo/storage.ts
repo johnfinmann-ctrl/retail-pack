@@ -126,11 +126,11 @@ class IndexedDbBlobStore implements BlobStore {
   }
 }
 
-export async function openBlobStore(): Promise<BlobStore> {
+export async function openBlobStore(dbName: string = DB_NAME): Promise<BlobStore> {
   if (typeof indexedDB === 'undefined') return new MemoryBlobStore();
   try {
     const db = await new Promise<IDBDatabase>((resolve, reject) => {
-      const request = indexedDB.open(DB_NAME, 1);
+      const request = indexedDB.open(dbName, 1);
       request.onupgradeneeded = () => {
         if (!request.result.objectStoreNames.contains(STORE)) request.result.createObjectStore(STORE);
       };
