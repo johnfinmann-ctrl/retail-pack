@@ -1,6 +1,7 @@
 import { formatDate } from '../../i18n';
 import { Loading, useAsync } from '../../ui/common';
 import { CONFIG } from '../domain/config';
+import { summarize } from '../domain/SplitOrderService';
 import type { DemoUserV5 } from '../domain/store';
 import { getV5 } from '../services';
 
@@ -9,12 +10,13 @@ import { RULE_STATUS } from './RulesAdmin';
 export function OverviewAdmin({ user, onOpenRule }: { user: DemoUserV5; onOpenRule: (id: string) => void }) {
   const { data } = useAsync(async () => {
     const s = getV5();
-    const [chains, rules, docs, history] = await Promise.all([s.rules.listChains(), s.rules.listRuleSets(), s.rules.listDocuments(), s.registrations.history()]);
+    const [chains, rules, docs, history, routes] = await Promise.all([s.rules.listChains(), s.rules.listRuleSets(), s.rules.listDocuments(), s.registrations.history(), s.registrations.listPickroutes()]);
+    const awaitingFl = routes.filter((r) => summarize(r).overall === 'awaiting_fl').length;
     const pending = rules.filter((r) => r.status === 'pending_review');
     const drafts = rules.filter((r) => r.status === 'draft');
     const realChains = chains.filter((c) => !c.isTest);
     const awaiting = realChains.filter((c) => !rules.some((r) => r.scope.chainId === c.id && r.status === 'approved'));
-    return { chains, pending, drafts, awaiting, docs, approved: rules.filter((r) => r.status === 'approved').length, deviations: history.filter((h) => h.pallet.status === 'deviation').length };
+    return { chains, pending, drafts, awaiting, docs, awaitingFl, approved: rules.filter((r) => r.status === 'approved').length, deviations: history.filter((h) => h.pallet.status === 'deviation').length };
   }, []);
   if (!data) return <Loading />;
   const chainName = (id: string) => data.chains.find((c) => c.id === id)?.name ?? '';
@@ -38,6 +40,10 @@ export function OverviewAdmin({ user, onOpenRule }: { user: DemoUserV5; onOpenRu
         <div className="stat">
           <div className="v">{data.deviations}</div>
           <div className="k">Registrerede afvigelser</div>
+        </div>
+        <div className="stat">
+          <div className="v">{data.awaitingFl}</div>
+          <div className="k">Delte ordrer afventer FL</div>
         </div>
       </div>
 

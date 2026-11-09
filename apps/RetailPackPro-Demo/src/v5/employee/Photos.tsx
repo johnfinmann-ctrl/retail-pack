@@ -18,8 +18,10 @@ export async function captureFor(input: {
   palletRecordId: string | null;
   user: DemoUserV5;
   toast: (m: string, k?: 'ok' | 'err' | 'info') => void;
+  /** true = kamera direkte; false = vælg eksisterende foto(s) (eller kamera via iPhones menu). */
+  camera?: boolean;
 }): Promise<number> {
-  const files = await pickImageFile({ capture: true, multiple: true });
+  const files = await pickImageFile(input.camera === false ? { multiple: true } : { capture: true });
   if (files.length === 0) return 0;
   const reg = getV5().registrations;
   const free = await reg.remainingPhotoSlots(input.pickrouteId);
@@ -72,8 +74,8 @@ export function PhotoBlock({
   const full = total >= MAX_PHOTOS_PER_ORDER;
   const persistent = getV5().store.persistent;
 
-  async function replace(ph: PhotoRecordV5) {
-    const files = await pickImageFile({ capture: true });
+  async function replace(ph: PhotoRecordV5, camera: boolean) {
+    const files = await pickImageFile(camera ? { capture: true } : {});
     if (!files[0]) return;
     try {
       const p = await compressImage(files[0]);
@@ -112,19 +114,35 @@ export function PhotoBlock({
           ))}
         </div>
       )}
-      {canAdd && (
-        <button
-          className="btn secondary block"
-          disabled={full}
-          onClick={() =>
-            void captureFor({ pickrouteId, palletRecordId, user, toast }).then((n) => {
-              if (n) onChanged();
-            })
-          }
-        >
-          <Icon name="camera" /> {full ? 'Maks. 35 fotos nået' : 'Tag foto'}
-        </button>
-      )}
+      {canAdd &&
+        (full ? (
+          <button className="btn secondary block" disabled>
+            <Icon name="camera" /> Maks. 35 fotos nået
+          </button>
+        ) : (
+          <div className="btn-row">
+            <button
+              className="btn secondary"
+              onClick={() =>
+                void captureFor({ pickrouteId, palletRecordId, user, toast, camera: true }).then((n) => {
+                  if (n) onChanged();
+                })
+              }
+            >
+              <Icon name="camera" /> Tag foto
+            </button>
+            <button
+              className="btn ghost"
+              onClick={() =>
+                void captureFor({ pickrouteId, palletRecordId, user, toast, camera: false }).then((n) => {
+                  if (n) onChanged();
+                })
+              }
+            >
+              <Icon name="image" /> Vælg foto
+            </button>
+          </div>
+        ))}
       {open && (
         <Lightbox
           src={LOCAL_IMAGE_PREFIX + open.fileId}
@@ -132,8 +150,11 @@ export function PhotoBlock({
           onClose={() => setOpen(null)}
           actions={
             <>
-              <button className="btn secondary small" onClick={() => void replace(open)}>
+              <button className="btn secondary small" onClick={() => void replace(open, true)}>
                 <Icon name="camera" size={18} /> Erstat
+              </button>
+              <button className="btn ghost small" style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.5)' }} onClick={() => void replace(open, false)}>
+                <Icon name="image" size={18} /> Vælg foto
               </button>
               {canDelete && (
                 <button

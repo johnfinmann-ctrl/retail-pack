@@ -171,6 +171,81 @@ export interface Pickroute {
   demoBatchIds: string[];
   isTest: true;
   createdAt: string;
+
+  // ---- v0.5.1: delte ordrer (Carletti H5 / Frode Laursen FL) ----
+  /**
+   * Ordrelinjer med lagersted — i drift kun til VISNING fra AX. Tom liste =
+   * ikke oplyst (behandles som almindelig H5-ordre).
+   */
+  lines: OrderLine[];
+  carlettiStatus: CarlettiPackingStatus;
+  carlettiCompletedAt: string | null;
+  carlettiCompletedBy: string | null;
+  /** Leveringsform for delte ordrer — bestemmes af Frode Laursen, aldrig af RetailPackPro. */
+  deliveryDecision: DeliveryDecision;
+  deliveryDecisionAt: string | null;
+  /** Kun sand, når AX (her: simuleret) har bekræftet, at ALLE dele er håndteret. */
+  axConfirmedComplete: boolean;
+  axConfirmedAt: string | null;
+}
+
+export type SiteCode = 'H5' | 'FL';
+
+export interface OrderLine {
+  id: string;
+  itemNumber: string;
+  description: string;
+  /** Lagersted i AX: H5 = Carletti, FL = Frode Laursen (fjernlager). */
+  site: SiteCode;
+  /** Lokation i AX: PLUK1 (Carletti) eller FL. */
+  location: string;
+  /** Linjestatus som AX melder den (simuleret i demoen). */
+  status: 'open' | 'handled';
+}
+
+export type CarlettiPackingStatus = 'not_started' | 'in_progress' | 'completed';
+
+/** 'not_applicable' = ikke delt ordre. */
+export type DeliveryDecision = 'not_applicable' | 'pending' | 'consolidation' | 'split';
+
+export type OverallOrderStatus =
+  | 'open'
+  | 'carletti_done_awaiting_ax'
+  | 'awaiting_fl'
+  | 'completed_in_ax';
+
+export type AxEventType =
+  | 'carletti_packing_completed'
+  | 'packing_completed_order_split'
+  | 'awaiting_fl'
+  | 'delivery_method_confirmed';
+
+/**
+ * Hændelse forberedt til AX-integration (udbakke). I demoen sendes intet —
+ * kvitteringer simuleres i admin.
+ */
+export interface AxEvent {
+  id: string;
+  pickrouteId: string;
+  routeNumber: string;
+  salesOrder: string;
+  type: AxEventType;
+  payload: Record<string, string | number | boolean | null>;
+  createdAt: string;
+  createdBy: string;
+  status: 'queued' | 'acknowledged';
+  acknowledgedAt: string | null;
+  simulated: true;
+}
+
+/** Indgående (simuleret) besked fra AX / Frode Laursen — logges for sporbarhed. */
+export interface AxInbound {
+  id: string;
+  pickrouteId: string;
+  kind: 'fl_delivery_decision' | 'ax_fl_lines_handled' | 'ax_all_parts_handled';
+  value: string | null;
+  receivedAt: string;
+  simulated: true;
 }
 
 export type PalletStatus = 'in_progress' | 'approved' | 'deviation';

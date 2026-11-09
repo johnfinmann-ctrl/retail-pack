@@ -5,7 +5,7 @@
  */
 import type { BlobStore } from '../../demo/storage';
 
-import type { Chain, ChainFormat, PalletRecord, PhotoRecordV5, Pickroute, RuleSet, SourceDocument, Warehouse } from './types';
+import type { AxEvent, AxInbound, Chain, ChainFormat, PalletRecord, PhotoRecordV5, Pickroute, RuleSet, SourceDocument, Warehouse } from './types';
 
 export interface Collections {
   chains: Chain;
@@ -16,6 +16,8 @@ export interface Collections {
   pickroutes: Pickroute;
   pallets: PalletRecord;
   photos: PhotoRecordV5;
+  axEvents: AxEvent;
+  axInbound: AxInbound;
 }
 
 export type CollectionName = keyof Collections;

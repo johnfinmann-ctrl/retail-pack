@@ -22,6 +22,7 @@ import type { DataStore, DemoUserV5 } from './store';
 import {
   MAX_PHOTOS_PER_ORDER,
   type CheckResult,
+  type OrderLine,
   type PalletRecord,
   type PalletStatus,
   type PhotoRecordV5,
@@ -116,7 +117,17 @@ export class RegistrationService {
   }
 
   async savePickroute(
-    input: { id?: string; routeNumber: string; salesOrder: string; recipientName: string; chainId: string; formatId: string | null; warehouseId: string | null; demoBatchIds: string[] },
+    input: {
+      id?: string;
+      routeNumber: string;
+      salesOrder: string;
+      recipientName: string;
+      chainId: string;
+      formatId: string | null;
+      warehouseId: string | null;
+      demoBatchIds: string[];
+      lines?: Array<Pick<OrderLine, 'itemNumber' | 'description' | 'site'>>;
+    },
     user: DemoUserV5,
   ): Promise<Pickroute> {
     if (user.role === 'medarbejder') throw new ForbiddenError('Testordrer oprettes i administrationen.');
@@ -136,8 +147,40 @@ export class RegistrationService {
       warehouseId: input.warehouseId,
       demoBatchIds: input.demoBatchIds.map((b) => b.trim()).filter(Boolean),
     };
-    if (input.id) return this.store.update('pickroutes', input.id, row);
-    return this.store.insert('pickroutes', { id: newId(), isTest: true, createdAt: now(), ...row });
+    const existing = input.id ? routes.find((p) => p.id === input.id) : undefined;
+    const lines: OrderLine[] | undefined = input.lines?.map((l, i) => {
+      const prev = existing?.lines?.[i];
+      const itemNumber = l.itemNumber.trim();
+      if (!itemNumber) throw new ValidationError(`Varelinje ${i + 1}: angiv varenummer.`);
+      return {
+        id: prev?.id ?? newId(),
+        itemNumber,
+        description: l.description.trim(),
+        site: l.site,
+        location: CONFIG.sites[l.site].location,
+        status: prev && prev.site === l.site ? prev.status : 'open',
+      };
+    });
+    const nextLines = lines ?? existing?.lines ?? [];
+    const split = nextLines.some((l) => l.site === 'H5') && nextLines.some((l) => l.site === 'FL');
+    const prevDecision = existing?.deliveryDecision ?? 'not_applicable';
+    // Leveringsform kan kun komme fra Frode Laursen — her sættes kun "afventer"/"ikke delt"
+    const deliveryDecision = split ? (prevDecision === 'not_applicable' ? 'pending' : prevDecision) : 'not_applicable';
+    if (existing) return this.store.update('pickroutes', existing.id, { ...row, lines: nextLines, deliveryDecision });
+    return this.store.insert('pickroutes', {
+      id: newId(),
+      isTest: true,
+      createdAt: now(),
+      ...row,
+      lines: nextLines,
+      carlettiStatus: 'not_started',
+      carlettiCompletedAt: null,
+      carlettiCompletedBy: null,
+      deliveryDecision,
+      deliveryDecisionAt: null,
+      axConfirmedComplete: false,
+      axConfirmedAt: null,
+    });
   }
 
   async resolveFor(pickroute: Pickroute): Promise<Resolution> {
@@ -153,6 +196,8 @@ export class RegistrationService {
   async startPallet(pickrouteId: string, user: DemoUserV5, ssccInput?: string): Promise<PalletRecord> {
     const pickroute = await this.store.get('pickroutes', pickrouteId);
     if (!pickroute) throw new NotFoundError('Plukrute');
+    if (pickroute.carlettiStatus === 'completed') throw new ValidationError('Carlettis pakning er afsluttet — der kan ikke startes flere paller.');
+    if (pickroute.carlettiStatus === 'not_started') await this.store.update('pickroutes', pickrouteId, { carlettiStatus: 'in_progress' });
     const all = await this.store.list('pallets');
     const mine = all.filter((p) => p.pickrouteId === pickrouteId);
     const number = mine.reduce((m, p) => Math.max(m, p.number), 0) + 1;

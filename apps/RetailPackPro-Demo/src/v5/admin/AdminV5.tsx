@@ -3,13 +3,14 @@ import { useState } from 'react';
 import { Icon } from '../../ui/Icon';
 import type { DemoUserV5 } from '../domain/store';
 
+import { AxSimulatorAdmin } from './AxSimulatorAdmin';
 import { DocumentsAdmin } from './DocumentsAdmin';
 import { OverviewAdmin } from './OverviewAdmin';
 import { PickroutesAdmin } from './PickroutesAdmin';
 import { RulesAdmin } from './RulesAdmin';
 import { StructureAdmin } from './StructureAdmin';
 
-export type AdminSection = 'overview' | 'rules' | 'documents' | 'structure' | 'pickroutes';
+export type AdminSection = 'overview' | 'rules' | 'documents' | 'structure' | 'pickroutes' | 'ax';
 
 const NAV: Array<{ key: AdminSection; label: string; icon: string }> = [
   { key: 'overview', label: 'Overblik', icon: 'home' },
@@ -17,6 +18,7 @@ const NAV: Array<{ key: AdminSection; label: string; icon: string }> = [
   { key: 'documents', label: 'Vejledninger', icon: 'order' },
   { key: 'structure', label: 'Kæder & lagre', icon: 'customers' },
   { key: 'pickroutes', label: 'Testordrer', icon: 'scan' },
+  { key: 'ax', label: 'AX-simulator', icon: 'reset' },
 ];
 
 export function AdminV5({ user }: { user: DemoUserV5 }) {
@@ -59,6 +61,7 @@ export function AdminV5({ user }: { user: DemoUserV5 }) {
           {section === 'documents' && <DocumentsAdmin user={user} />}
           {section === 'structure' && <StructureAdmin user={user} />}
           {section === 'pickroutes' && <PickroutesAdmin user={user} />}
+          {section === 'ax' && <AxSimulatorAdmin user={user} />}
         </div>
       </main>
     </div>

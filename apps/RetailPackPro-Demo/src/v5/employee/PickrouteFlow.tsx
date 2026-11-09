@@ -7,9 +7,11 @@ import { useEffect, useState } from 'react';
 
 import { formatDateTime } from '../../i18n';
 import { ScanField } from '../../scanner/ScanField';
-import { errorText, Loading, Sheet, useAsync, useToast } from '../../ui/common';
+import { ConfirmSheet, errorText, Loading, Sheet, useAsync, useToast } from '../../ui/common';
 import { Icon } from '../../ui/Icon';
+import { CONFIG } from '../domain/config';
 import type { PickrouteLookup } from '../domain/RegistrationService';
+import { CARLETTI_LABEL, DECISION_LABEL, EVENT_LABEL, OVERALL_LABEL, summarize } from '../domain/SplitOrderService';
 import type { DemoUserV5 } from '../domain/store';
 import { MAX_PHOTOS_PER_ORDER, type PalletRecord, type Pickroute } from '../domain/types';
 import { getV5 } from '../services';
@@ -112,6 +114,7 @@ function ScanRoute({ onOpen }: { onOpen: (p: Pickroute) => void }) {
                 {r.recipientName} · {chains?.find((c) => c.id === r.chainId)?.name}
               </span>
             </span>
+            {summarize(r).isSplit && <span className="pill stop">Delt</span>}
             <span className="chev">
               <Icon name="chev" />
             </span>
@@ -126,25 +129,35 @@ function RouteDetail({ user, routeId, onPallet }: { user: DemoUserV5; routeId: s
   const toast = useToast();
   const [showReq, setShowReq] = useState(false);
   const [newOpen, setNewOpen] = useState(false);
+  const [confirmDone, setConfirmDone] = useState(false);
+  const [v, setV] = useState(0);
   const { data } = useAsync(async () => {
     const s = getV5();
     const route = await s.store.get('pickroutes', routeId);
     if (!route) throw new Error('Plukruten findes ikke');
-    const [r, pallets, photos, documents] = await Promise.all([
+    const [r, pallets, photos, documents, blockers, events] = await Promise.all([
       s.registrations.resolveFor(route),
       s.registrations.listPallets(routeId),
       s.registrations.listPhotos(routeId),
       s.rules.listDocuments(),
+      s.split.completionBlockers(routeId),
+      s.split.listEvents(routeId),
     ]);
-    return { route, r, pallets, photos, documents };
-  }, [routeId]);
+    return { route, r, pallets, photos, documents, blockers, events };
+  }, [routeId, v]);
 
   if (!data) return <Loading />;
-  const { route, r, pallets, photos } = data;
+  const { route, r, pallets, photos, blockers, events } = data;
+  const sum = summarize(route);
+  const done = route.carlettiStatus === 'completed';
+  const own = CONFIG.sites.H5;
 
   return (
     <>
       <div className="route-card">
+        <div className="top-pills">
+          {sum.isSplit ? <span className="split-pill">DELT ORDRE · H5 + FL</span> : <span className="own-pill">Kun Carletti (H5)</span>}
+        </div>
         <div className="kv">
           <div>
             <div className="k">Plukrute</div>
@@ -163,8 +176,58 @@ function RouteDetail({ user, routeId, onPallet }: { user: DemoUserV5; routeId: s
             <div className="v">{r.chain.name}</div>
           </div>
         </div>
+        <div className="kv">
+          <div>
+            <div className="k">Carlettis lagersted</div>
+            <div className="v num">
+              {own.code} · {own.location}
+            </div>
+          </div>
+          <div>
+            <div className="k">Carlettis pakning</div>
+            <div className="v">{CARLETTI_LABEL[route.carlettiStatus]}</div>
+          </div>
+          {sum.isSplit && (
+            <div>
+              <div className="k">Leveringsform</div>
+              <div className="v">{DECISION_LABEL[sum.decision]}</div>
+            </div>
+          )}
+          <div>
+            <div className="k">Samlet ordre</div>
+            <div className="v">{OVERALL_LABEL[sum.overall]}</div>
+          </div>
+        </div>
         <span className="ax">Lokal testordre — ikke slået op i AX</span>
       </div>
+
+      {sum.isSplit && (
+        <div className="split-banner" role="alert">
+          <Icon name="warn" size={30} />
+          <div className="grow">
+            <strong>DELT ORDRE</strong>
+            <span>
+              {sum.flLines.length} varelinje{sum.flLines.length === 1 ? '' : 'r'} hos Frode Laursen (FL)
+              {sum.openFlLines.length < sum.flLines.length && ` · ${sum.flLines.length - sum.openFlLines.length} håndteret i AX`}
+            </span>
+            <span className="small">Afslut kun Carlettis del. Salgsordren lukkes ikke her.</span>
+          </div>
+        </div>
+      )}
+
+      {sum.isSplit && (
+        <div className={`notice ${sum.decision === 'pending' ? 'warn' : 'info'}`} role="status">
+          <Icon name={sum.decision === 'pending' ? 'info' : 'flag'} />
+          <div className="grow">
+            <strong>Leveringsform: {DECISION_LABEL[sum.decision]}</strong>
+            <span className="small">
+              {sum.decision === 'pending' && 'Frode Laursen har ikke besluttet endnu. Sæt pallerne til side, når Carlettis del er pakket.'}
+              {sum.decision === 'consolidation' && 'Carlettis paller sendes til Frode Laursen, som samler ordren.'}
+              {sum.decision === 'split' && 'Carletti og Frode Laursen leverer hver deres del.'}
+            </span>
+          </div>
+        </div>
+      )}
 
       <section className="panel" aria-label="Pakkekrav">
         <div className="eyebrow">Pakkekrav · {receiverLine(r)}</div>
@@ -189,10 +252,100 @@ function RouteDetail({ user, routeId, onPallet }: { user: DemoUserV5; routeId: s
             <PalletRow key={p.id} p={p} photoCount={photos.filter((ph) => ph.palletRecordId === p.id).length} onOpen={() => onPallet(p.id)} />
           ))}
         </div>
-        <button className="btn primary xl block" onClick={() => setNewOpen(true)}>
-          <Icon name="pallet" size={28} /> Ny palle
-        </button>
+        {!done && (
+          <button className="btn primary xl block" onClick={() => setNewOpen(true)}>
+            <Icon name="pallet" size={28} /> Ny palle
+          </button>
+        )}
       </section>
+
+      <section className="panel" aria-label="Carlettis pakning">
+        {done ? (
+          <div className="notice ok" role="status">
+            <Icon name="check" />
+            <div className="grow">
+              <strong>Carlettis pakning er afsluttet</strong>
+              <span className="small">
+                {route.carlettiCompletedAt && formatDateTime(route.carlettiCompletedAt)}
+                {sum.isSplit ? ' · Salgsordren er IKKE afsluttet — afventer Frode Laursen og AX.' : ' · Afventer bekræftelse fra AX.'}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <>
+            {blockers.length > 0 && (
+              <ul className="blockers">
+                {blockers.map((b) => (
+                  <li key={b}>{b}</li>
+                ))}
+              </ul>
+            )}
+            <button className="btn go xl block" disabled={blockers.length > 0} onClick={() => setConfirmDone(true)}>
+              <Icon name="flag" size={28} /> Afslut Carlettis pakning
+            </button>
+          </>
+        )}
+        {events.length > 0 && (
+          <div>
+            <div className="eyebrow">AX-hændelser (simuleret — intet sendt til AX)</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 6 }}>
+              {events.map((e) => (
+                <div key={e.id} className="small" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                  <span className={`pill ${e.status === 'acknowledged' ? 'go' : 'neutral'}`}>{e.status === 'acknowledged' ? 'Kvitteret' : 'Afventer kvittering'}</span>
+                  <span>{EVENT_LABEL[e.type]}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
+
+      {route.lines.length > 0 && (
+        <section className="panel" aria-label="Varelinjer">
+          <h2>Varelinjer pr. lagersted</h2>
+          {[
+            { title: `${own.name} · ${own.code} / ${own.location}`, lines: sum.ownLines, cls: 'own' },
+            { title: `${CONFIG.sites.FL.name} · FL / FL`, lines: sum.flLines, cls: 'fl' },
+          ]
+            .filter((g) => g.lines.length > 0)
+            .map((g) => (
+              <div key={g.cls} className={`site-group ${g.cls}`}>
+                <div className="eyebrow">{g.title}</div>
+                {g.lines.map((l) => (
+                  <div key={l.id} className="site-line">
+                    <span className="code num">{l.itemNumber}</span>
+                    <span className="grow">{l.description}</span>
+                    {l.site === 'FL' && <span className={`pill ${l.status === 'handled' ? 'go' : 'draft'}`}>{l.status === 'handled' ? 'Håndteret (AX)' : 'Åben hos FL'}</span>}
+                  </div>
+                ))}
+              </div>
+            ))}
+          <p className="small muted">Varelinjerne vises kun til orientering. Antal, partier og ordrestatus styres i AX.</p>
+        </section>
+      )}
+
+      {confirmDone && (
+        <ConfirmSheet
+          title="Afslut Carlettis pakning?"
+          body={
+            sum.isSplit
+              ? `Kun Carlettis del afsluttes. Salgsordre ${route.salesOrder} forbliver åben, fordi ${sum.openFlLines.length} varelinje(r) ligger hos Frode Laursen.`
+              : `Carlettis pakning af plukrute ${route.routeNumber} afsluttes. Salgsordren lukkes først, når AX bekræfter.`
+          }
+          confirmLabel="Afslut Carlettis pakning"
+          onCancel={() => setConfirmDone(false)}
+          onConfirm={async () => {
+            try {
+              await getV5().split.completeCarlettiPacking(route.id, user);
+              toast(sum.isSplit ? 'Carlettis pakning er afsluttet — ordren er delt og afventer FL' : 'Carlettis pakning er afsluttet');
+              setV((x) => x + 1);
+            } catch (e) {
+              toast(errorText(e), 'err');
+            }
+            setConfirmDone(false);
+          }}
+        />
+      )}
 
       {showReq && (
         <Sheet title="Pakkekrav" onClose={() => setShowReq(false)} wide>

@@ -95,6 +95,7 @@ function RouteForm({
     formatId: route?.formatId ?? '',
     warehouseId: route?.warehouseId ?? '',
     batches: route?.demoBatchIds.join(', ') ?? '',
+    lines: (route?.lines ?? []).map((l) => `${l.site}; ${l.itemNumber}; ${l.description}`).join('\n'),
   });
   const set = (k: keyof typeof f, v: string) => setF((x) => ({ ...x, [k]: v }));
   return (
@@ -115,6 +116,7 @@ function RouteForm({
                 formatId: f.formatId || wh?.formatId || null,
                 warehouseId: f.warehouseId || null,
                 demoBatchIds: f.batches.split(/[,\s]+/),
+                lines: parseLines(f.lines),
               },
               user,
             );
@@ -183,6 +185,11 @@ function RouteForm({
           <input id="pr-batch" type="text" value={f.batches} onChange={(e) => set('batches', e.target.value)} placeholder="Adskil med komma" />
           <span className="help">Kun til demoen, så appen kan advare, hvis et parti-ID scannes i stedet for plukruten.</span>
         </div>
+        <div className="field">
+          <label htmlFor="pr-lines">Varelinjer med lagersted (valgfri)</label>
+          <textarea id="pr-lines" value={f.lines} onChange={(e) => set('lines', e.target.value)} placeholder={'H5; TEST-1001; Testvare A\nFL; TEST-2001; Testvare C'} />
+          <span className="help">Én linje pr. vare: lagersted (H5 eller FL); varenummer; tekst. Har ordren både H5 og FL, bliver den en delt ordre.</span>
+        </div>
         <div className="btn-row">
           <button type="button" className="btn ghost" onClick={onClose}>
             Annullér
@@ -192,4 +199,17 @@ function RouteForm({
       </form>
     </Sheet>
   );
+}
+
+function parseLines(text: string): Array<{ site: 'H5' | 'FL'; itemNumber: string; description: string }> {
+  return text
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .map((l, i) => {
+      const [site = '', itemNumber = '', ...rest] = l.split(';').map((x) => x.trim());
+      const code = site.toUpperCase();
+      if (code !== 'H5' && code !== 'FL') throw new Error(`Varelinje ${i + 1}: lagersted skal være H5 eller FL.`);
+      return { site: code, itemNumber, description: rest.join('; ') };
+    });
 }

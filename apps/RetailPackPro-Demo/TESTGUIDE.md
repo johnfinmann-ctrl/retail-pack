@@ -38,3 +38,30 @@ Tid: ca. 15 minutter. *Menu (tandhjul) → Nulstil demo* starter forfra.
    - Lad kontrollanten godkende.
    - Som medarbejder vises billedet nu som "Godkendt reference".
 5. **Testordrer** → opret en testordre og scan den som medarbejder.
+
+## C. Delte ordrer og AX-simulering (v0.5.1, 6 min)
+
+1. Medarbejder → **Ordrer & paller** → `205101` (kun H5).
+   - Lagersted H5 · PLUK1, ingen DELT-markering.
+   - Pak en palle → **Afslut Carlettis pakning**. Status: "Carletti færdig — afventer AX".
+2. `205102`: Den røde **DELT ORDRE**-markering viser 2 linjer hos Frode Laursen, og leveringsformen er "Konsolidering hos FL".
+   - Pak en palle → **Afslut Carlettis pakning**.
+   - Status: "Afventer Frode Laursen". Salgsordren er **ikke** afsluttet.
+3. `205103`: Samme forløb, men med leveringsformen "Delt levering".
+4. *Menu → Skift til regelansvarlig* → **AX-simulator**:
+   - Prøv "AX: Alle dele håndteret" på 205102. Det afvises, fordi FL-linjerne stadig er åbne.
+   - Tryk derefter "AX: FL-linjer håndteret" og så "AX: Alle dele håndteret". Status bliver "Afsluttet i AX".
+   - Tryk "Simulér kvittering" på en hændelse i udbakken.
+5. **Testordrer** → ny ordre med varelinjerne `H5; …` og `FL; …`.
+   - Medarbejderen ser "Afventer beslutning".
+   - Vælg "FL: Delt levering" i simulatoren.
+
+## D. Kamera på iPhone
+
+Brug https-versionen (GitHub Pages) i Safari. På Claude-linket er live-kamera spærret. Se `IPHONE_TEST.md`.
+
+1. **Ordrer & paller** → kameraknappen. Giv tilladelse, og scan plukruten fra **Menu → Test-pluklister** på en anden skærm.
+2. Afvis tilladelsen én gang og tjek beskeden. Tryk så "Prøv kameraet igen".
+3. Tryk **Tag billede** på stregkoden. Koden skal aflæses.
+4. På en palle: **Tag foto** to gange i træk, derefter **Vælg foto** fra fotobiblioteket.
+5. Genindlæs siden og tjek, at fotos og paller stadig er der.

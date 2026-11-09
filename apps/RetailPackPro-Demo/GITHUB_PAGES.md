@@ -1,6 +1,6 @@
 # Læg demoen online gratis (GitHub Pages)
 
-Demoen er én fil: `dist/index.html` (ca. 0,8 MB). Der er intet build-trin hos
+Demoen er én fil: `dist/index.html` (ca. 0,8 MB; v0.5.1). Der er intet build-trin hos
 modtageren.
 
 **Vigtigt:** GitHub Pages er kun gratis for **offentlige** repositories.

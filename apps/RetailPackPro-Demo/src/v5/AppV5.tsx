@@ -86,7 +86,7 @@ export function AppV5() {
           </div>
         )}
         <span className="spacer" />
-        <span className="demo-pill">Demo 0.5</span>
+        <span className="demo-pill">Demo 0.5.1</span>
         <button className="icon-btn" onClick={() => setMenu(true)} aria-label="Menu">
           <Icon name="settings" />
         </button>
@@ -95,7 +95,7 @@ export function AppV5() {
       {!role && (
         <main className="page">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <span className="eyebrow">Demoversion 0.5</span>
+            <span className="eyebrow">Demoversion 0.5.1</span>
             <h1 style={{ fontSize: 38 }}>Pak efter kædens krav</h1>
             <p className="muted" style={{ maxWidth: 580 }}>
               Detailkædernes krav til palleopbygning, sikring, folie og mærkning — pr. modtagelager. Alle data ligger lokalt i browseren.
@@ -169,7 +169,7 @@ export function AppV5() {
 
       {role && role !== 'medarbejder' && user && <AdminV5 key={user.id} user={user} />}
 
-      <footer className="footer">Udviklet af Nordic Operations · Demoversion 0.5 med lokale testdata</footer>
+      <footer className="footer">Udviklet af Nordic Operations · Demoversion 0.5.1 med lokale testdata</footer>
 
       {menu && (
         <Sheet title="Menu" onClose={() => setMenu(false)}>

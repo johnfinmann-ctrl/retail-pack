@@ -9,25 +9,51 @@ import { USERS_V5, type StateV5 } from './data/seed';
 import { CONFIG } from './domain/config';
 import { RegistrationService } from './domain/RegistrationService';
 import { RuleService } from './domain/RuleService';
+import { SplitOrderService } from './domain/SplitOrderService';
 
 export interface ServicesV5 {
   rules: RuleService;
   registrations: RegistrationService;
+  split: SplitOrderService;
   store: LocalStore;
 }
 
 export function composeV5(store: LocalStore): ServicesV5 {
   const rules = new RuleService(store);
-  return { rules, registrations: new RegistrationService(store, rules), store };
+  return { rules, registrations: new RegistrationService(store, rules), split: new SplitOrderService(store), store };
+}
+
+/** Kopierer filer (fotos, PDF'er, referencebilleder) fra v0.5.0's fillager. Originalen røres ikke. */
+async function copyFilesFrom(previous: BlobStore, store: LocalStore): Promise<number> {
+  const ids = new Set<string>();
+  store.state.photos.forEach((p) => ids.add(p.fileId));
+  store.state.documents.forEach((d) => d.fileId && ids.add(d.fileId));
+  store.state.ruleSets.forEach((r) => r.referenceImage && ids.add(r.referenceImage.fileId));
+  let copied = 0;
+  for (const id of ids) {
+    const blob = await previous.get(id);
+    if (blob) {
+      await store.blobs.put(id, blob);
+      copied++;
+    }
+  }
+  return copied;
 }
 
 let instance: ServicesV5 | null = null;
 
 export async function initServicesV5(blobStore?: BlobStore): Promise<ServicesV5> {
   if (instance) return instance;
-  const blobs = blobStore ?? (await openBlobStore('retailpackpro-demo-v05'));
-  const store = new LocalStore(new JsonStorage<StateV5>(CONFIG.storageKey), blobs);
+  const blobs = blobStore ?? (await openBlobStore(CONFIG.fileDbName));
+  const store = new LocalStore(new JsonStorage<StateV5>(CONFIG.storageKey), blobs, new JsonStorage<StateV5>(CONFIG.previousStorageKey));
   instance = composeV5(store);
+  if (store.migratedFromPrevious && !blobStore) await copyFilesFrom(await openBlobStore(CONFIG.previousFileDbName), store);
+  // Bed browseren om ikke at rydde lageret automatisk (Safari kan ellers slette data efter 7 dage uden brug)
+  try {
+    await navigator.storage?.persist?.();
+  } catch {
+    // ikke understøttet — ignoreres
+  }
   setMediaBackend({
     getFile: (id) => store.blobs.get(id),
     putFile: (id, data) => store.blobs.put(id, data),

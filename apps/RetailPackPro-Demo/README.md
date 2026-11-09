@@ -1,4 +1,9 @@
-# RetailPackPro Demo v0.5 — kædernes pakkekrav
+# RetailPackPro Demo v0.5.1 — kædernes pakkekrav og delte ordrer
+
+> **v0.5.1:** Delte ordrer mellem Carletti (H5 / PLUK1) og Frode Laursen (FL / FL), forberedte
+> AX-hændelser med simulator og rettet kamera på iPhone. Se `CHANGELOG.md` og `IPHONE_TEST.md`.
+> v0.5.0 er bevaret som reference i `reference/retailpackpro-demo-v0.5.0.html`.
+
 
 Klikbar browserdemo uden Supabase, login og AX-forbindelse. Den videreudvikler v0.4.0.
 v0.4.0 er bevaret som fungerende referenceversion (`reference/retailpackpro-demo-v0.4.0.html`,

@@ -6,7 +6,7 @@
 import type { BlobStore, JsonStorage } from '../../demo/storage';
 import type { CollectionName, Collections, DataStore } from '../domain/store';
 
-import { createSeedV5, SCHEMA_VERSION, type StateV5 } from './seed';
+import { createSeedV5, migrateState, SCHEMA_VERSION, type StateV5 } from './seed';
 
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 
@@ -17,13 +17,26 @@ export class LocalStore implements DataStore {
   private batching = 0;
   private listeners = new Set<() => void>();
 
+  /** Sand, når data blev kopieret frem fra den forrige versions lager (v0.5.0). */
+  migratedFromPrevious = false;
+
   constructor(
     private readonly storage: JsonStorage<StateV5>,
     readonly blobs: BlobStore,
+    previous?: JsonStorage<StateV5>,
   ) {
     const stored = storage.read();
+    const prev = !stored && previous ? previous.read() : null;
     if (stored && stored.schemaVersion === SCHEMA_VERSION) this.state = stored;
-    else {
+    else if (stored && stored.schemaVersion < SCHEMA_VERSION) {
+      this.state = migrateState(stored);
+      this.save();
+    } else if (prev && prev.schemaVersion <= SCHEMA_VERSION) {
+      // Kopiér v0.5.0-data frem. v0.5.0's eget lager røres ikke.
+      this.state = migrateState(prev);
+      this.migratedFromPrevious = true;
+      this.save();
+    } else {
       this.state = createSeedV5();
       this.freshlySeeded = true;
       this.save();

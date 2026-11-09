@@ -136,26 +136,40 @@ export function Img({
   return <img src={resolved} alt={alt} {...rest} />;
 }
 
-/** Skjult filvælger. På mobil/tablet åbner `capture` kameraet direkte. */
+let lingering: HTMLInputElement | null = null;
+
+/**
+ * Skjult filvælger.
+ * - capture: true  → åbner kameraet direkte (iPhone/Android). Tillader ét foto.
+ * - capture: false → iPhone viser "Tag foto / Fotobibliotek / Vælg fil"; flere kan vælges.
+ * Skal kaldes som det FØRSTE i et klik — Safari blokerer ellers vælgeren.
+ * Hvert kald bruger et nyt felt, så kameraet altid kan åbnes igen.
+ */
 export function pickImageFile(options: { capture?: boolean; multiple?: boolean } = {}): Promise<File[]> {
+  // Et felt fra en tidligere annulleret vælger (Safari sender ikke altid "cancel") fjernes
+  lingering?.remove();
   return new Promise((resolve) => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
     if (options.capture) input.setAttribute('capture', 'environment');
-    if (options.multiple) input.multiple = true;
-    input.style.position = 'fixed';
-    input.style.left = '-9999px';
+    else if (options.multiple) input.multiple = true;
+    // Synligt for browseren (ikke display:none), men usynligt for brugeren
+    Object.assign(input.style, { position: 'fixed', top: '0', left: '0', width: '1px', height: '1px', opacity: '0', pointerEvents: 'none' });
+    input.setAttribute('aria-hidden', 'true');
+    input.tabIndex = -1;
     let settled = false;
     const finish = (files: File[]) => {
       if (settled) return;
       settled = true;
       input.remove();
+      if (lingering === input) lingering = null;
       resolve(files);
     };
     input.addEventListener('change', () => finish(Array.from(input.files ?? [])));
     input.addEventListener('cancel', () => finish([]));
     document.body.appendChild(input);
+    lingering = input;
     input.click();
   });
 }

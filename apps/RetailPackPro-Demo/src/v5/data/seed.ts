@@ -10,9 +10,9 @@
  * Carletti — her som LOKAL testordre (ikke hentet fra AX).
  */
 import type { CollectionName, Collections, DemoUserV5 } from '../domain/store';
-import type { RuleField, RuleFieldKey, RuleSet } from '../domain/types';
+import type { OrderLine, Pickroute, RuleField, RuleFieldKey, RuleSet } from '../domain/types';
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export const USERS_V5 = {
   employee: { id: 'u-employee', fullName: 'Demo-medarbejder', role: 'medarbejder' },
@@ -221,6 +221,7 @@ export function createSeedV5(): StateV5 {
     ],
 
     pickroutes: [
+      ...([
       {
         id: 'pr-204874', routeNumber: '204874', salesOrder: '334327', recipientName: 'SuperBrugsen Vig',
         chainId: 'ch-coop', formatId: 'fmt-superbrugsen', warehouseId: null,
@@ -252,8 +253,112 @@ export function createSeedV5(): StateV5 {
         id: 'pr-205004', routeNumber: '205004', salesOrder: '900104', recipientName: 'Testbutik Øst',
         chainId: T, formatId: 'fmt-test', warehouseId: 'wh-test-oest', demoBatchIds: ['P90000104'], isTest: true, createdAt: daysAgo(0),
       },
+      ] as LegacyPickroute[]).map(withSplitDefaults),
+      ...splitTestRoutes(),
     ],
     pallets: [],
     photos: [],
+    axEvents: [],
+    axInbound: [],
   };
+}
+
+// ------------------------------------------------ v0.5.1: delte ordrer
+
+/** Plukrute som i v0.5.0 (før felterne for delte ordrer). */
+export type LegacyPickroute = Omit<
+  Pickroute,
+  'lines' | 'carlettiStatus' | 'carlettiCompletedAt' | 'carlettiCompletedBy' | 'deliveryDecision' | 'deliveryDecisionAt' | 'axConfirmedComplete' | 'axConfirmedAt'
+>;
+
+export function withSplitDefaults(p: LegacyPickroute & Partial<Pickroute>): Pickroute {
+  return {
+    lines: [],
+    carlettiStatus: 'not_started',
+    carlettiCompletedAt: null,
+    carlettiCompletedBy: null,
+    deliveryDecision: 'not_applicable',
+    deliveryDecisionAt: null,
+    axConfirmedComplete: false,
+    axConfirmedAt: null,
+    ...p,
+  };
+}
+
+const line = (id: string, itemNumber: string, description: string, site: 'H5' | 'FL'): OrderLine => ({
+  id,
+  itemNumber,
+  description,
+  site,
+  location: site === 'H5' ? 'PLUK1' : 'FL',
+  status: 'open',
+});
+
+/** Tre fiktive testordrer til delte ordrer — TESTDATA, ikke fra AX. */
+export function splitTestRoutes(): Pickroute[] {
+  const base = { chainId: 'ch-test', formatId: 'fmt-test', warehouseId: 'wh-test-nord', isTest: true as const, createdAt: daysAgo(0) };
+  return [
+    withSplitDefaults({
+      ...base,
+      id: 'pr-205101',
+      routeNumber: '205101',
+      salesOrder: '900201',
+      recipientName: 'Testbutik Nord – kun H5',
+      demoBatchIds: ['P90000201'],
+      lines: [line('l-205101-1', 'TEST-1001', 'Testvare A (fiktiv)', 'H5'), line('l-205101-2', 'TEST-1002', 'Testvare B (fiktiv)', 'H5')],
+    }),
+    withSplitDefaults({
+      ...base,
+      id: 'pr-205102',
+      routeNumber: '205102',
+      salesOrder: '900202',
+      recipientName: 'Testbutik Nord – konsolidering',
+      demoBatchIds: ['P90000202'],
+      lines: [
+        line('l-205102-1', 'TEST-1001', 'Testvare A (fiktiv)', 'H5'),
+        line('l-205102-2', 'TEST-2001', 'Testvare C – fjernlager (fiktiv)', 'FL'),
+        line('l-205102-3', 'TEST-2002', 'Testvare D – fjernlager (fiktiv)', 'FL'),
+      ],
+      deliveryDecision: 'consolidation',
+      deliveryDecisionAt: daysAgo(0),
+    }),
+    withSplitDefaults({
+      ...base,
+      id: 'pr-205103',
+      routeNumber: '205103',
+      salesOrder: '900203',
+      recipientName: 'Testbutik Nord – delt levering',
+      demoBatchIds: ['P90000203'],
+      lines: [
+        line('l-205103-1', 'TEST-1002', 'Testvare B (fiktiv)', 'H5'),
+        line('l-205103-2', 'TEST-2001', 'Testvare C – fjernlager (fiktiv)', 'FL'),
+      ],
+      deliveryDecision: 'split',
+      deliveryDecisionAt: daysAgo(0),
+    }),
+  ];
+}
+
+/**
+ * Løfter en gemt v0.5.0-tilstand (schema 1) til v0.5.1 (schema 2) UDEN at
+ * miste registreringer, fotos, dokumenter eller regeländringer.
+ */
+export function migrateState(old: Partial<StateV5> & { schemaVersion: number }): StateV5 {
+  const fresh = createSeedV5();
+  if (old.schemaVersion === SCHEMA_VERSION) return old as StateV5;
+  if (old.schemaVersion !== 1) return fresh;
+  const routes = ((old.pickroutes ?? []) as Array<LegacyPickroute & Partial<Pickroute>>).map(withSplitDefaults);
+  // Carlettis status afledes af eksisterende paller
+  for (const r of routes) {
+    if ((old.pallets ?? []).some((p) => p.pickrouteId === r.id)) r.carlettiStatus = 'in_progress';
+  }
+  for (const add of splitTestRoutes()) if (!routes.some((r) => r.id === add.id || r.routeNumber === add.routeNumber)) routes.push(add);
+  return {
+    ...fresh,
+    ...old,
+    schemaVersion: SCHEMA_VERSION,
+    pickroutes: routes,
+    axEvents: [],
+    axInbound: [],
+  } as StateV5;
 }

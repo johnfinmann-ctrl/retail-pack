@@ -11,7 +11,7 @@ import { Sheet } from '../ui/common';
 import { Icon } from '../ui/Icon';
 import { pickImageFile } from '../ui/media';
 
-import { classifyCameraError, decodeFromImage, liveCameraPossible, startLiveScan, type CameraError } from './barcode';
+import { cameraDiagnostics, classifyCameraError, decodeFromImage, liveCameraPossible, startLiveScan, unsupportedReason, type CameraError } from './barcode';
 
 export function ScanField({
   placeholder,
@@ -85,13 +85,17 @@ type Phase = 'starting' | 'live' | 'failed' | 'decoding' | 'photo_none';
 
 function CameraScanSheet({ onClose, onCode }: { onClose: () => void; onCode: (code: string) => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [phase, setPhase] = useState<Phase>(liveCameraPossible() ? 'starting' : 'failed');
-  const [reason, setReason] = useState<CameraError>(liveCameraPossible() ? 'unknown' : 'unsupported');
+  const possible = liveCameraPossible();
+  const pre = unsupportedReason();
+  const [phase, setPhase] = useState<Phase>(possible ? 'starting' : 'failed');
+  const [reason, setReason] = useState<CameraError | 'frame_blocked' | 'insecure' | 'embedded_no_camera' | 'no_api'>(possible ? 'unknown' : (pre ?? 'unsupported'));
+  const diag = cameraDiagnostics();
+  const [attempt, setAttempt] = useState(0);
   const onCodeRef = useRef(onCode);
   onCodeRef.current = onCode;
 
   useEffect(() => {
-    if (!liveCameraPossible() || !videoRef.current) return;
+    if (!possible || phase !== 'starting' || !videoRef.current) return;
     let stop: (() => void) | null = null;
     let cancelled = false;
     startLiveScan(videoRef.current, (code) => {
@@ -107,17 +111,21 @@ function CameraScanSheet({ onClose, onCode }: { onClose: () => void; onCode: (co
       })
       .catch((e: unknown) => {
         if (cancelled) return;
-        setReason(classifyCameraError(e));
+        const r = classifyCameraError(e);
+        // I en indlejret visning (fx Claude) afvises kameraet af rammen — ikke af brugeren
+        setReason(r === 'not_allowed' && isEmbedded() ? 'frame_blocked' : r);
         setPhase('failed');
       });
     return () => {
       cancelled = true;
       stop?.();
     };
-  }, []);
+    // Starter kun ved nyt forsøg (attempt)
+  }, [attempt]);
 
-  async function fromPhoto() {
-    const files = await pickImageFile({ capture: true });
+  async function fromPhoto(capture: boolean) {
+    // Filvælgeren åbnes som det første i klikket (kræves af Safari)
+    const files = await pickImageFile({ capture });
     const file = files[0];
     if (!file) return;
     setPhase('decoding');
@@ -126,12 +134,14 @@ function CameraScanSheet({ onClose, onCode }: { onClose: () => void; onCode: (co
     else setPhase('photo_none');
   }
 
+  const canRetry = possible && (reason === 'not_allowed' || reason === 'in_use' || reason === 'unknown');
+
   return (
     <Sheet title={t('demo.scan.camera_title')} onClose={onClose}>
       {(phase === 'starting' || phase === 'live') && (
         <>
           <div className="camera-view">
-            <video ref={videoRef} playsInline muted />
+            <video ref={videoRef} playsInline muted autoPlay />
             <div className="aim" />
           </div>
           <p className="hint">
@@ -141,17 +151,40 @@ function CameraScanSheet({ onClose, onCode }: { onClose: () => void; onCode: (co
       )}
 
       {phase === 'failed' && (
-        <div className="notice warn">
+        <div className="notice warn" role="alert">
           <Icon name="info" />
           <div className="grow">
             <strong>{t(`demo.scan.camera_error.${reason}`)}</strong>
+            {reason === 'not_allowed' && <span className="small">{t('demo.scan.permission_help')}</span>}
+            {(reason === 'frame_blocked' || reason === 'embedded_no_camera') && <span className="small">{t('demo.scan.open_standalone')}</span>}
+            {reason === 'insecure' && <span className="small">{t('demo.scan.needs_https')}</span>}
             <span>{t('demo.scan.camera_photo_hint')}</span>
+            <span className="small muted" data-testid="camera-diag">
+              {t('demo.scan.diag', {
+                https: diag.secure ? t('demo.common.yes') : t('demo.common.no'),
+                api: diag.mediaDevices ? t('demo.common.yes') : t('demo.common.no'),
+                embedded: diag.embedded ? t('demo.common.yes') : t('demo.common.no'),
+                detector: diag.nativeDetector ? t('demo.scan.detector_native') : t('demo.scan.detector_js'),
+              })}
+            </span>
+            {canRetry && (
+              <button
+                className="btn ghost small"
+                style={{ alignSelf: 'flex-start' }}
+                onClick={() => {
+                  setPhase('starting');
+                  setAttempt((a) => a + 1);
+                }}
+              >
+                <Icon name="reset" size={18} /> {t('demo.scan.retry')}
+              </button>
+            )}
           </div>
         </div>
       )}
       {phase === 'decoding' && <p className="muted">{t('demo.scan.decoding')}</p>}
       {phase === 'photo_none' && (
-        <div className="notice err">
+        <div className="notice err" role="alert">
           <Icon name="warn" />
           <div className="grow">
             <strong>{t('demo.scan.photo_none')}</strong>
@@ -161,13 +194,25 @@ function CameraScanSheet({ onClose, onCode }: { onClose: () => void; onCode: (co
       )}
 
       <div className="btn-row">
-        <button className="btn secondary" onClick={() => void fromPhoto()}>
+        <button className="btn secondary" onClick={() => void fromPhoto(true)}>
           <Icon name="camera" /> {t('demo.scan.photo_button')}
         </button>
-        <button className="btn ghost" onClick={onClose}>
-          {t('demo.scan.type_instead')}
+        <button className="btn secondary" onClick={() => void fromPhoto(false)}>
+          <Icon name="image" /> {t('demo.scan.choose_photo')}
         </button>
       </div>
+      <button className="btn ghost block" onClick={onClose}>
+        {t('demo.scan.type_instead')}
+      </button>
     </Sheet>
   );
+}
+
+/** Kører siden i en indlejret ramme (fx en Claude-visning)? Her kan kameraet være spærret af rammen. */
+export function isEmbedded(): boolean {
+  try {
+    return window.self !== window.top;
+  } catch {
+    return true;
+  }
 }

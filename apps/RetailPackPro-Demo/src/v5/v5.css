@@ -70,3 +70,16 @@
 .pallet-card .grow { min-width: 150px; }
 .pallet-card strong.num { white-space: nowrap; }
 .refimg .frame.empty { aspect-ratio: auto; min-height: 96px; }
+/* v0.5.1 — delte ordrer */
+.split-banner { background: var(--stop); color: #fff; border-radius: var(--r-lg); padding: 16px 18px; display: flex; gap: 14px; align-items: flex-start; }
+.split-banner .grow { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.split-banner strong { font-family: var(--font-display); font-size: 28px; letter-spacing: 0.04em; line-height: 1; }
+.site-group { border: 1px solid var(--line); border-radius: var(--r-md); padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+.site-group.fl { background: var(--stop-soft); border-color: #f2c4c4; }
+.site-line { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.site-line .grow { flex: 1; min-width: 140px; }
+.route-card .v { font-size: 20px; line-height: 1.15; overflow-wrap: break-word; hyphens: auto; }
+.route-card .v.num { font-size: 26px; }
+.route-card .top-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+.route-card .split-pill { background: var(--stop); color: #fff; font-weight: 700; letter-spacing: 0.06em; font-size: 14px; padding: 4px 10px; border-radius: 99px; }
+.route-card .own-pill { background: rgba(255,255,255,0.14); color: #fff; font-weight: 700; font-size: 14px; padding: 4px 10px; border-radius: 99px; }

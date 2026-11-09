@@ -57,14 +57,18 @@
       "camera_live": "Hold stregkoden inden for den gule ramme",
       "camera_starting": "Starter kamera …",
       "camera_error": {
-        "not_allowed": "Kameraet må ikke bruges her",
+        "not_allowed": "Adgang til kameraet blev afvist",
         "no_camera": "Der blev ikke fundet et kamera",
         "in_use": "Kameraet bruges af en anden app",
-        "unsupported": "Live-kamera understøttes ikke i denne visning",
-        "unknown": "Kameraet kunne ikke startes"
+        "unsupported": "Live-kamera understøttes ikke her",
+        "unknown": "Kameraet kunne ikke startes",
+        "frame_blocked": "Live-kamera er spærret i denne visning",
+        "insecure": "Kameraet kræver en sikker forbindelse (https)",
+        "embedded_no_camera": "Live-kamera er ikke tilgængeligt i denne visning",
+        "no_api": "Denne browser giver ikke adgang til kameraet"
       },
-      "camera_photo_hint": "Tag i stedet et billede af stregkoden — appen aflæser den fra billedet.",
-      "photo_button": "Tag billede af stregkoden",
+      "camera_photo_hint": "Tag et billede af stregkoden — appen aflæser den fra billedet.",
+      "photo_button": "Tag billede",
       "type_instead": "Indtast i stedet",
       "decoding": "Aflæser stregkoden …",
       "photo_none": "Ingen stregkode fundet på billedet",
@@ -76,7 +80,15 @@
       "ask_lead": "Spørg din teamleder, før varen pakkes.",
       "is_order": "{order} er et ordrenummer",
       "open_order": "Åbn ordren",
-      "choose": "Vælg vare"
+      "choose": "Vælg vare",
+      "permission_help": "iPhone: tryk på \"aA\" i adresselinjen → Webstedsindstillinger → Kamera → Tillad. Eller: Indstillinger → Safari → Kamera.",
+      "retry": "Prøv kameraet igen",
+      "choose_photo": "Vælg billede",
+      "open_standalone": "Åbn demoen direkte i Safari (https-adressen, fx GitHub Pages) for at bruge live-kamera. I Claude-appen og indlejrede visninger er kameraet spærret.",
+      "needs_https": "En HTML-fil åbnet fra Filer eller via http giver ikke kameraadgang. Brug https-adressen.",
+      "diag": "Teknisk: https {https} · kamera-API {api} · indlejret {embedded} · scanner: {detector}",
+      "detector_native": "indbygget",
+      "detector_js": "JavaScript (ZXing)"
     },
     "guide": {
       "item_no": "Varenr.",
